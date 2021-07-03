@@ -699,17 +699,9 @@ func ktype(l *Flayer, res Resource) {
 			flushtyping(false)
 			paste(t, t.front)
 		case BACK:
-			inllist := func(tl *Flayer, ls []*Flayer) bool {
-				for _, j := range ls {
-					if tl == j {
-						return true
-					}
-				}
-				return false
-			}
 			t = &cmd
 			for i := 0; i < len(t.l); i++ {
-				if inllist(&t.l[i], llist) {
+				if flinlist(&t.l[i]) {
 					l = &t.l[i]
 				}
 			}
