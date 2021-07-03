@@ -482,3 +482,12 @@ func flscale(l *Flayer, n int) int {
 	}
 	return l.f.Display.ScaleSize(n)
 }
+
+func flinlist(l *Flayer) bool {
+	for _, fl := range llist {
+		if l == fl {
+			return true
+		}
+	}
+	return false
+}

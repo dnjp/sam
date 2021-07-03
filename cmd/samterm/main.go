@@ -486,6 +486,7 @@ const (
 	CUT           = draw.KeyCmd + 'x'
 	COPY          = draw.KeyCmd + 'c'
 	PASTE         = draw.KeyCmd + 'v'
+	BACK          = draw.KeyCmd + 'b'
 )
 
 func nontypingkey(c rune) bool {
@@ -502,7 +503,8 @@ func nontypingkey(c rune) bool {
 		SCROLLKEY,
 		CUT,
 		COPY,
-		PASTE:
+		PASTE,
+		BACK:
 		return true
 	}
 	return false
@@ -696,6 +698,18 @@ func ktype(l *Flayer, res Resource) {
 		case PASTE:
 			flushtyping(false)
 			paste(t, t.front)
+		case BACK:
+			t = &cmd
+			for i := 0; i < len(t.l); i++ {
+				if flinlist(&t.l[i]) {
+					l = &t.l[i]
+				}
+			}
+			current(l)
+			flushtyping(false)
+			a = t.rasp.nrunes
+			flsetselect(l, a, a)
+			center(l, a)
 		}
 	}
 }
