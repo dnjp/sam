@@ -486,7 +486,8 @@ const (
 	CUT           = draw.KeyCmd + 'x'
 	COPY          = draw.KeyCmd + 'c'
 	PASTE         = draw.KeyCmd + 'v'
-	BACK          = draw.KeyCmd + 'b'
+	BACK          = 0x02 // ctrl+b
+	LAST          = 0x07 // ctrl+g
 )
 
 func nontypingkey(c rune) bool {
@@ -504,7 +505,8 @@ func nontypingkey(c rune) bool {
 		CUT,
 		COPY,
 		PASTE,
-		BACK:
+		BACK,
+		LAST:
 		return true
 	}
 	return false
@@ -677,6 +679,7 @@ func ktype(l *Flayer, res Resource) {
 			}
 		}
 	} else {
+		var i int
 		if c == ESC && typeesc >= 0 {
 			l.p0 = typeesc
 			l.p1 = a
@@ -710,8 +713,31 @@ func ktype(l *Flayer, res Resource) {
 			a = t.rasp.nrunes
 			flsetselect(l, a, a)
 			center(l, a)
+		case LAST:
+			if work == nil {
+				return
+			}
+			if which != work {
+				current(work)
+				return
+			}
+			t = work.text
+			l = &t.l[t.front]
+			for i = t.front; t.nwin > 1 && incr(&i) != t.front; {
+				if t.l[i].textfn != nil {
+					l = &t.l[i]
+					break
+				}
+			}
+			current(l)
+			break
 		}
 	}
+}
+
+func incr(v *int) int {
+	*v = (*v + 1) % NL
+	return *v
 }
 
 func outcmd() {
