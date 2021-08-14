@@ -351,6 +351,11 @@ func paste(t *Text, w int) {
 
 func scrorigin(l *Flayer, but int, p0 int) {
 	t := l.text
+
+	if t.tag == Untagged {
+		return
+	}
+
 	switch but {
 	case 1:
 		outTsll(Torigin, t.tag, l.origin, p0)
