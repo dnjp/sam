@@ -226,16 +226,12 @@ func fldelete(l *Flayer, p0 int, p1 int) {
 }
 
 func flselect(l *Flayer) int {
-	var (
-		dt, dx, dy int
-	)
-
 	if l.visible != All {
 		flupfront(l)
 	}
-	dt = int(mousep.Msec - l.click)
-	dx = int(math.Abs(float64(mousep.Point.X - clickpt.X)))
-	dy = int(math.Abs(float64(mousep.Point.Y - clickpt.Y)))
+	dt := int(mousep.Msec - l.click)
+	dx := int(math.Abs(float64(mousep.Point.X - clickpt.X)))
+	dy := int(math.Abs(float64(mousep.Point.Y - clickpt.Y)))
 	l.click = mousep.Msec
 	clickpt = mousep.Point
 
