@@ -572,7 +572,13 @@ func ktype(l *Flayer, res Resource) {
 				break
 			}
 		}
-		kinput = append(kinput, c)
+		if l.tabexpand && c == '\t' {
+			for i := 0; i < t.tabwidth; i++ {
+				kinput = append(kinput, ' ')
+			}
+		} else {
+			kinput = append(kinput, c)
+		}
 		if autoindent {
 			if c == '\n' {
 				cursor := ctlu(&t.rasp, 0, a+len(kinput)-1)
