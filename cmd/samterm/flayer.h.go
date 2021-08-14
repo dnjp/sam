@@ -32,6 +32,6 @@ type Flayer struct {
 	visible Vis
 }
 
-func FLMARGIN(l *Flayer) int    { return flscale(l, 4) }
+func FLMARGIN(l *Flayer) int    { return flscale(l, 2) }
 func FLSCROLLWID(l *Flayer) int { return flscale(l, 12) }
 func FLGAP(l *Flayer) int       { return flscale(l, 4) }

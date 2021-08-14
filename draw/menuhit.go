@@ -47,8 +47,8 @@ var menu struct {
 func menucolors(display *Display) {
 	/* Main tone is greenish, with negative selection */
 	menu.back, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0xFFFFFFFF)
-	menu.high, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0xA4C2BDFF)
-	menu.bord, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0xA4C2BDFF)
+	menu.high, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0x676B6BFF)
+	menu.bord, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0x676B6BFF)
 	if menu.back == nil || menu.high == nil || menu.bord == nil {
 		goto Error
 	}
