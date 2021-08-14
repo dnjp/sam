@@ -114,6 +114,8 @@ func main() {
 			}
 			nwhich := flwhich(mousep.Point)
 			scr := which != nil && mousep.Point.In(which.scroll)
+			scr = which != nil && (mousep.Point.In(which.scroll)) ||
+				mousep.Buttons&(8|16) != 0
 			if mousep.Buttons != 0 {
 				flushtyping(true)
 			}
@@ -122,12 +124,17 @@ func main() {
 			}
 			if chording && chord != 0 {
 				chord |= mousep.Buttons
-			} else if mousep.Buttons&1 != 0 {
+			} else if mousep.Buttons&(1|8) != 0 {
 				if nwhich != nil {
 					if nwhich != which {
 						current(nwhich)
 					} else if scr {
-						scroll(which, 1)
+						scroll(which, func() int {
+							if mousep.Buttons&8 != 0 {
+								return 4
+							}
+							return 1
+						}())
 					} else {
 						t := which.text
 						if flselect(which) {
@@ -147,9 +154,14 @@ func main() {
 				} else {
 					menu2hit()
 				}
-			} else if mousep.Buttons&4 != 0 {
+			} else if mousep.Buttons&(4|16) != 0 {
 				if scr {
-					scroll(which, 3)
+					scroll(which, func() int {
+						if mousep.Buttons&16 != 0 {
+							return 5
+						}
+						return 3
+					}())
 				} else {
 					menu3hit()
 				}
