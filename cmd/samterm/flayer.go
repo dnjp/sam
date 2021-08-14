@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"math"
 
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
@@ -222,24 +223,32 @@ func fldelete(l *Flayer, p0 int, p1 int) {
 }
 
 func flselect(l *Flayer) bool {
+	var (
+		clickcount int
+		clickpt image.Point
+		dt, dx, dy int
+	)
+	
+	clickpt = image.Pt(-10, -10)
 	if l.visible != All {
 		flupfront(l)
 	}
-	l.f.Select(mousectl)
-	ret := false
-	if l.f.P0 == l.f.P1 {
-		if mousep.Msec-l.click < Clicktime && l.f.P0+l.origin == l.p0 {
-			ret = true
-			l.click = 0
-		} else {
-			l.click = mousep.Msec
-		}
-	} else {
-		l.click = 0
+	dt = int(mousep.Msec - l.click)
+	dx = int(math.Abs(float64(mousep.Point.X - clickpt.X)))
+	dy = int(math.Abs(float64(mousep.Point.Y - clickpt.Y)))
+	l.click = mousep.Msec
+	clickpt = mousep.Point
+	
+	if dx < 3 && dy < 3 && dt < Clicktime && clickcount < 3 {
+		clickcount++
+		return clickcount > 0
 	}
+	clickcount = 0
+
+	l.f.Select(mousectl)
 	l.p0 = l.f.P0 + l.origin
 	l.p1 = l.f.P1 + l.origin
-	return ret
+	return false
 }
 
 func flsetselect(l *Flayer, p0 int, p1 int) {

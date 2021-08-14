@@ -4,6 +4,7 @@ import "unicode/utf8"
 
 /* VERSION 1 introduces plumbing
 2 increases SNARFSIZE from 4096 to 32000
+3 adds a triple click
 */
 const VERSION = 2
 
@@ -37,6 +38,7 @@ const (
 	Tsearch
 	Tsend
 	Tdclick
+	Ttclick
 	Tstartsnarf
 	Tsetsnarf
 	Tack
