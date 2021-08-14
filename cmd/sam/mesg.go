@@ -57,7 +57,7 @@ var hname = [26]string{
 	Hplumb:      "Hplumb",
 }
 
-var tname = [23]string{
+var tname = [24]string{
 	Tversion:      "Tversion",
 	Tstartcmdfile: "Tstartcmdfile",
 	Tcheck:        "Tcheck",
@@ -81,6 +81,7 @@ var tname = [23]string{
 	Tack:          "Tack",
 	Texit:         "Texit",
 	Tplumb:        "Tplumb",
+	Ttclick:       "Ttclick",
 }
 
 var journal_fd int = 0
@@ -462,9 +463,11 @@ func inmesg(type_ Tmesg) bool {
 		termcommand()
 
 	case Tdclick:
+		fallthrough
+	case Ttclick:
 		f = whichfile(inshort())
 		p1 = inlong()
-		doubleclick(f, p1)
+		stretchsel(f, p1, type_ == Ttclick)
 		f.tdot.p2 = p1
 		f.tdot.p1 = f.tdot.p2
 		telldot(f)

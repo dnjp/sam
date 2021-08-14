@@ -64,22 +64,36 @@ func lookorigin(f *File, p0 Posn, ls Posn) {
 	outTsl(Horigin, f.tag, p0)
 }
 
-func alnum(c rune) bool {
+func isalnum(r rune) bool {
 	/*
 	 * Hard to get absolutely right.  Use what we know about ASCII
 	 * and assume anything above the Latin control characters is
 	 * potentially an alphanumeric.
 	 */
-	if c <= ' ' {
+	if r <= ' ' {
 		return false
 	}
-	if 0x7F <= c && c <= 0xA0 {
+	if 0x7F <= r && r <= 0xA0 {
 		return false
 	}
-	if strings.ContainsRune("!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~", c) {
+	if strings.ContainsRune("!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~", r) {
 		return false
 	}
 	return true
+}
+
+func isspace(r rune) bool {
+	return r == 0 || r == ' ' || r == '\t' ||
+		r == '\n' || r == '\r' || r == '\v'
+}
+
+func inmode(r rune, mode bool) bool {
+	// double click
+	if !mode {
+		return isalnum(r)
+	}
+	// triple click
+	return !isspace(r)
 }
 
 func clickmatch(f *File, cl, cr rune, dir int, p *Posn) bool {
@@ -121,7 +135,12 @@ func indexRune(s []rune, c rune) int {
 	return -1
 }
 
-func doubleclick(f *File, p1 Posn) {
+// Stretches a selection out over current text,
+// selecting matching range if possible.
+// If there's no matching range, mode 0 selects
+// a single alphanumeric region. Mode 1 selects
+// a non-whitespace region.
+func stretchsel(f *File, p1 Posn, mode bool) {
 	if p1 > f.b.nc {
 		return
 	}
@@ -174,7 +193,7 @@ func doubleclick(f *File, p1 Posn) {
 	p = p1
 	for p < f.b.nc {
 		p++
-		if !alnum(filereadc(f, p-1)) {
+		if !inmode(filereadc(f, p-1), mode) {
 			break
 		}
 		f.dot.r.p2++
@@ -183,7 +202,7 @@ func doubleclick(f *File, p1 Posn) {
 	p = p1
 	for {
 		p--
-		if p < 0 || !alnum(filereadc(f, p)) {
+		if p < 0 || !inmode(filereadc(f, p), mode) {
 			break
 		}
 		f.dot.r.p1--
