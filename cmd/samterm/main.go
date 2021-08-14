@@ -31,7 +31,7 @@ var (
 	textByID    map[int64]*Text
 )
 
-const chording = false /* code here for reference but it causes deadlocks */
+const chording = true /* code here for reference but it causes deadlocks */
 
 func main() {
 	/*
