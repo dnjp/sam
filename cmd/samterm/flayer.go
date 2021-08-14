@@ -16,6 +16,9 @@ var lDrect image.Rectangle
 var maincols [frame.NCOL]*draw.Image
 var cmdcols [frame.NCOL]*draw.Image
 
+var clickcount int
+var clickpt image.Point = image.Pt(-10, -10)
+
 func flstart(r image.Rectangle) {
 	lDrect = r
 
@@ -221,11 +224,6 @@ func fldelete(l *Flayer, p0 int, p1 int) {
 		}
 	}
 }
-
-var (
-	clickcount int
-	clickpt    image.Point = image.Pt(-10, -10)
-)
 
 func flselect(l *Flayer) int {
 	var (
