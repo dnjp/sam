@@ -45,6 +45,8 @@ var cmdtab1 = []Cmdtab{
 	{'y', false, true, false, 'p', aDot, 0, "", x_cmd},
 	{'X', false, true, false, 'f', aNo, 0, "", X_cmd},
 	{'Y', false, true, false, 'f', aNo, 0, "", X_cmd},
+	{'z', false, false, false, 0, aNo, 0, wordx, tw_cmd},
+	{'Z', false, false, false, 0, aNo, 0, "", te_cmd},
 	{'!', false, false, false, 0, aNo, 0, linex, plan9_cmd},
 	{'>', false, false, false, 0, aDot, 0, linex, plan9_cmd},
 	{'<', false, false, false, 0, aDot, 0, linex, plan9_cmd},

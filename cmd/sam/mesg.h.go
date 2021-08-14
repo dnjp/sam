@@ -79,6 +79,8 @@ const (
 	Hack
 	Hexit
 	Hplumb
+	Htabwidth  // tab width
+	Htabexpand // tab expand
 	HMAX
 )
 

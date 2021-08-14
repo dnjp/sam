@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -335,6 +336,28 @@ func nl_cmd(f *File, cp *Cmd) bool {
 func cd_cmd(f *File, cp *Cmd) bool {
 	cd(cp.ctext)
 	return true
+}
+
+func tw_cmd(f *File, cp *Cmd) bool {
+	var tabwidth int
+	tw, err := strconv.Atoi(strings.TrimSpace(Strtoc(cp.ctext)))
+	if err != nil {
+		error_(Ebadrhs)
+	}
+	tabwidth = tw
+	if downloaded {
+		outTsv(Htabwidth, f.tag, int64(tabwidth))
+		return true
+	}
+	return false
+}
+
+func te_cmd(f *File, cp *Cmd) bool {
+	if downloaded {
+		outTs(Htabexpand, f.tag)
+		return true
+	}
+	return false
 }
 
 func fappend(f *File, cp *Cmd, p Posn) bool {

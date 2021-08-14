@@ -63,6 +63,7 @@ func flinit(l *Flayer, r image.Rectangle, ft *draw.Font, cols []*draw.Image) {
 	l.f.Display = display // for FLMARGIN
 	l.f.Init(flrect(l, r).Inset(FLMARGIN(l)), ft, screen, cols)
 	l.f.MaxTab = maxtab * ft.StringWidth("0")
+	l.tabexpand = false
 	newvisibilities(true)
 	screen.Draw(l.entire, l.f.Cols[frame.BACK], nil, draw.ZP)
 	scrdraw(l, 0)

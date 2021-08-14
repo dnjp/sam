@@ -110,6 +110,38 @@ func inmesg(typ Hmesg, count int) {
 	case Hversion:
 		hversion = m
 
+	case Htabwidth:
+		l := invlong(2)
+		i := whichmenu(m)
+		t := whichtext(m)
+		if i < 0 || t == nil {
+			panic("NOT CURRENT")
+			break
+		}
+		t.tabwidth = int(l)
+		lp := &t.l[t.front]
+		if t.l[t.front].textfn != nil {
+			lp.f.MaxTab = int(l * int64(lp.f.Font.StringWidth("0")))
+		}
+		break
+
+	case Htabexpand:
+		i := whichmenu(m)
+		t := whichtext(m)
+		if i < 0 || t == nil {
+			break
+		}
+		lp := &t.l[t.front]
+		if t.l[t.front].textfn == nil {
+			break
+		}
+		if lp.tabexpand {
+			lp.tabexpand = false
+		} else {
+			lp.tabexpand = true
+		}
+		break
+
 	case Hbindname:
 		l := invlong(2) /* for 64-bit pointers */
 		i := whichmenu(m)
@@ -351,6 +383,7 @@ func startfile(t *Text) {
 
 func startnewfile(typ Tmesg, t *Text) {
 	t.tag = Untagged
+	t.tabwidth = maxtab
 	outTv(typ, t.id) /* for 64-bit pointers */
 }
 
