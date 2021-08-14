@@ -38,12 +38,12 @@ const (
 	Tsearch
 	Tsend
 	Tdclick
-	Ttclick
 	Tstartsnarf
 	Tsetsnarf
 	Tack
 	Texit
 	Tplumb
+	Ttclick
 	TMAX
 )
 

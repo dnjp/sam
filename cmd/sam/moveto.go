@@ -2,7 +2,7 @@
 
 package main
 
-import "unicode"
+import "strings"
 
 func moveto(f *File, r Range) {
 	p1 := r.p1
@@ -64,11 +64,36 @@ func lookorigin(f *File, p0 Posn, ls Posn) {
 	outTsl(Horigin, f.tag, p0)
 }
 
-func inmode(r rune, mode bool) bool {
-	if !mode {
-		return unicode.IsLetter(r) && unicode.IsDigit(r)
+func isalnum(r rune) bool {
+	/*
+	 * Hard to get absolutely right.  Use what we know about ASCII
+	 * and assume anything above the Latin control characters is
+	 * potentially an alphanumeric.
+	 */
+	if r <= ' ' {
+		return false
 	}
-	return unicode.IsSpace(r)
+	if 0x7F <= r && r <= 0xA0 {
+		return false
+	}
+	if strings.ContainsRune("!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~", r) {
+		return false
+	}
+	return true
+}
+
+func isspace(r rune) bool {
+	return r == 0 || r == ' ' || r == '\t' ||
+		r == '\n' || r == '\r' || r == '\v'
+}
+
+func inmode(r rune, mode bool) bool {
+	// double click
+	if !mode {
+		return isalnum(r)
+	}
+	// triple click
+	return !isspace(r)
 }
 
 func clickmatch(f *File, cl, cr rune, dir int, p *Posn) bool {
@@ -109,7 +134,6 @@ func indexRune(s []rune, c rune) int {
 	}
 	return -1
 }
-
 
 // Stretches a selection out over current text,
 // selecting matching range if possible.

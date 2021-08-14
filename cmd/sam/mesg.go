@@ -462,8 +462,9 @@ func inmesg(type_ Tmesg) bool {
 		telldot(cmd)
 		termcommand()
 
-	case Tdclick, Ttclick:
-		fmt.Println("TDCLICK TTCLICK")
+	case Tdclick:
+		fallthrough
+	case Ttclick:
 		f = whichfile(inshort())
 		p1 = inlong()
 		stretchsel(f, p1, type_ == Ttclick)

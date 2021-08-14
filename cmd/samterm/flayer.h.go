@@ -15,8 +15,8 @@ const (
 )
 
 const (
-	Clicktime = 1000
-) /* one second */
+	Clicktime = 500 // millisecond
+)
 
 type Flayer struct {
 	f       frame.Frame
