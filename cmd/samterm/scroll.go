@@ -112,6 +112,11 @@ func scroll(l *Flayer, but int) {
 	my := mousep.Point.Y
 	scrback.Draw(image.Rect(0, 0, l.scroll.Dx(), l.scroll.Dy()), l.f.B, nil, l.scroll.Min)
 	var p0 int
+
+	if l.visible == None {
+		return
+	}
+
 	for {
 		oin := in
 		in = abs(x-mousep.Point.X) <= FLSCROLLWID(l)/2
