@@ -391,7 +391,11 @@ func alnum(c rune) bool {
 }
 
 func raspc(r *Rasp, p int) rune {
-	return rload(r, p, p+1)[0]
+	nr := rload(r, p, p+1)
+	if len(nr) > 0 {
+		return nr[0]
+	}
+	return 0
 }
 
 func ctlw(r *Rasp, o int, p int) int {
