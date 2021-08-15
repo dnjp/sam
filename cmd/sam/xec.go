@@ -77,7 +77,7 @@ func a_cmd(f *File, cp *Cmd) bool {
 }
 
 func b_cmd(f *File, cp *Cmd) bool {
-	debug("%c ctext=%q\n", cp.cmdc, string(cp.ctext.s))
+	debug("%s ctext=%q\n", cp.cmdc, string(cp.ctext.s))
 	if cp.cmdc == "b" {
 		f = tofile(cp.ctext)
 	} else {

@@ -326,15 +326,16 @@ func freecmd() {
 }
 
 func lookup(s []rune) string {
-	var key string
 	end := len(s)
 	for i := range s {
 		if !unicode.IsLetter(s[i]) {
-			end = i
+			if i > 0 {
+				end = i
+			}
 			break
 		}
 	}
-	key = string(s[:end])
+	key := string(s[:end])
 	_, ok := cmdtab[key]
 	if ok {
 		return key
