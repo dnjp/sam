@@ -20,7 +20,7 @@ type Cmd struct {
 	next  *Cmd
 	num   int
 	flag  bool
-	cmdc  rune
+	cmdc  string
 }
 
 // #define	ccmd	g.cmd
@@ -28,11 +28,11 @@ type Cmd struct {
 // #define	caddr	g.addr
 
 type Cmdtab struct {
-	cmdc    rune
+	cmdc    string
 	text    bool
 	regexp  bool
 	addr    bool
-	defcmd  rune
+	defcmd  string
 	defaddr Defaddr
 	count   uint8
 	token   string

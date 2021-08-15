@@ -24,7 +24,7 @@ func setname(ecmd *exec.Cmd, f *File) {
 	ecmd.Env = append(os.Environ(), "samfile="+buf, "%="+buf)
 }
 
-func plan9(f *File, type_ rune, s *String, nest bool) int {
+func plan9(f *File, type_ string, s *String, nest bool) int {
 	if len(s.s) == 0 && len(plan9cmd.s) == 0 {
 		error_(Enocmd)
 	} else if len(s.s) != 0 {
@@ -32,11 +32,11 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 	}
 	/*
 		var pipe1 [2]int
-		if type_ != '!' && pipe(pipe1) == -1 {
+		if type_ != "!" && pipe(pipe1) == -1 {
 			error_(Epipe)
 		}
 	*/
-	if type_ == '|' {
+	if type_ == "|" {
 		snarf(f, addr.r.p1, addr.r.p2, &plan9buf, 1)
 	}
 
@@ -55,14 +55,14 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 		ecmd.Stdin = nil
 		if fd, err := os.Create(errfile); err == nil {
 			ecmd.Stderr = fd
-			if type_ == '>' || type_ == '!' {
+			if type_ == ">" || type_ == "!" {
 				ecmd.Stdout = fd
 			}
 		}
 	}
 
 	var stdout IOFile
-	if type_ == '<' || type_ == '|' {
+	if type_ == "<" || type_ == "|" {
 		ecmd.Stdout = nil
 		p, err := ecmd.StdoutPipe()
 		if err != nil {
@@ -72,7 +72,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 	}
 
 	var stdin IOFile
-	if type_ == '>' || type_ == '|' {
+	if type_ == ">" || type_ == "|" {
 		ecmd.Stdin = nil
 		p, err := ecmd.StdinPipe()
 		if err != nil {
@@ -81,7 +81,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 		stdin = p.(IOFile)
 	}
 
-	if type_ == '|' {
+	if type_ == "|" {
 		go func() {
 			defer func() {
 				stdin.Close()
@@ -112,7 +112,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 	xerr := ecmd.Start()
 
 	switch type_ {
-	case '<', '|':
+	case "<", "|":
 		if downloaded && addr.r.p1 != addr.r.p2 {
 			outTl(Hsnarflen, addr.r.p2-addr.r.p1)
 		}
@@ -125,7 +125,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 		f.ndot.r.p1 = addr.r.p2
 		closeio(-1)
 
-	case '>':
+	case ">":
 		iofile = stdin
 		bpipeok = true
 		writeio(f)
@@ -136,7 +136,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 	if xerr == nil {
 		xerr = ecmd.Wait()
 	}
-	if type_ == '|' || type_ == '<' {
+	if type_ == "|" || type_ == "<" {
 		if xerr != nil {
 			warn(Wbadstatus)
 		}
