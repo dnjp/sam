@@ -213,6 +213,7 @@ func inmesg(type_ Tmesg) bool {
 	var p Posn
 	var r Range
 	var str *String
+	debug("EV TYPE: %d", type_)
 	switch type_ {
 	case -1:
 		panic_("rcv error")
@@ -401,6 +402,7 @@ func inmesg(type_ Tmesg) bool {
 		}
 		Strduplstr(&genstr, &f.name)
 		writef(f)
+		logwrite(f.name)
 
 	case Tclose:
 		termlocked++
