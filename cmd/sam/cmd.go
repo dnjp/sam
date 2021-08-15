@@ -331,6 +331,8 @@ func lookup(s []rune) string {
 		if !unicode.IsLetter(s[i]) {
 			if i > 0 {
 				end = i
+			} else {
+				end = i+1
 			}
 			break
 		}
