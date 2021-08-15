@@ -16,26 +16,31 @@ func resetxec() {
 }
 
 func cmdexec(f *File, cp *Cmd) bool {
+	debug("EXEC: %+v\n", cp)
 	if f != nil && f.unread {
 		load(f)
 	}
-	if f == nil && (cp.addr == nil || cp.addr.type_ != '"') && !strings.ContainsRune("bBnqUXY!", cp.cmdc) && cp.cmdc != 'c'|0x100 && (cp.cmdc != 'D' || cp.ctext == nil) {
+	if f == nil &&
+		(cp.addr == nil || cp.addr.type_ != '"') &&
+		!strings.Contains("bBnqUXY!", cp.cmdc) &&
+		cp.cmdc != "cd" &&
+		(cp.cmdc != "D" || cp.ctext == nil) {
 		error_(Enofile)
 	}
-	i := lookup(cp.cmdc)
-	if i >= 0 && cmdtab[i].defaddr != aNo {
+	key := lookup([]rune(cp.cmdc))
+	if key != "" && cmdtab[key].defaddr != aNo {
 		ap := cp.addr
-		if ap == nil && cp.cmdc != '\n' {
+		if ap == nil && cp.cmdc != "\n" {
 			ap = newaddr()
 			cp.addr = ap
 			ap.type_ = '.'
-			if cmdtab[i].defaddr == aAll {
+			if cmdtab[key].defaddr == aAll {
 				ap.type_ = '*'
 			}
-		} else if ap != nil && ap.type_ == '"' && ap.next == nil && cp.cmdc != '\n' {
+		} else if ap != nil && ap.type_ == '"' && ap.next == nil && cp.cmdc != "\n" {
 			ap.next = newaddr()
 			ap.next.type_ = '.'
-			if cmdtab[i].defaddr == aAll {
+			if cmdtab[key].defaddr == aAll {
 				ap.next.type_ = '*'
 			}
 		}
@@ -50,7 +55,7 @@ func cmdexec(f *File, cp *Cmd) bool {
 	}
 	current(f)
 	switch cp.cmdc {
-	case '{':
+	case "{":
 		var a Address
 		if cp.addr != nil {
 			a = address(cp.addr, f.dot, 0)
@@ -62,7 +67,7 @@ func cmdexec(f *File, cp *Cmd) bool {
 			cmdexec(a.f, cp)
 		}
 	default:
-		return cmdtab[i].fn(f, cp)
+		return cmdtab[key].fn(f, cp)
 	}
 	return true
 }
@@ -73,7 +78,7 @@ func a_cmd(f *File, cp *Cmd) bool {
 
 func b_cmd(f *File, cp *Cmd) bool {
 	debug("%c ctext=%q\n", cp.cmdc, string(cp.ctext.s))
-	if cp.cmdc == 'b' {
+	if cp.cmdc == "b" {
 		f = tofile(cp.ctext)
 	} else {
 		f = getfile(cp.ctext)
@@ -106,7 +111,7 @@ func D_cmd(f *File, cp *Cmd) bool {
 }
 
 func e_cmd(f *File, cp *Cmd) bool {
-	if getname(f, cp.ctext, cp.cmdc == 'e') == 0 {
+	if getname(f, cp.ctext, cp.cmdc == "e") == 0 {
 		error_(Enoname)
 	}
 	edit(f, cp.cmdc)
@@ -124,7 +129,7 @@ func g_cmd(f *File, cp *Cmd) bool {
 		panic_("g_cmd f!=addr.f")
 	}
 	compile(cp.re)
-	if execute(f, addr.r.p1, addr.r.p2) != (cp.cmdc == 'v') {
+	if execute(f, addr.r.p1, addr.r.p2) != (cp.cmdc == "v") {
 		f.dot = addr
 		return cmdexec(f, cp.ccmd)
 	}
@@ -142,7 +147,7 @@ func k_cmd(f *File, cp *Cmd) bool {
 
 func m_cmd(f *File, cp *Cmd) bool {
 	addr2 := address(cp.caddr, f.dot, 0)
-	if cp.cmdc == 'm' {
+	if cp.cmdc == "m" {
 		move(f, addr2)
 	} else {
 		fcopy(f, addr2)
@@ -280,7 +285,7 @@ func w_cmd(f *File, cp *Cmd) bool {
 
 func x_cmd(f *File, cp *Cmd) bool {
 	if cp.re != nil {
-		looper(f, cp, cp.cmdc == 'x')
+		looper(f, cp, cp.cmdc == "x")
 	} else {
 		linelooper(f, cp)
 	}
@@ -288,7 +293,7 @@ func x_cmd(f *File, cp *Cmd) bool {
 }
 
 func X_cmd(f *File, cp *Cmd) bool {
-	filelooper(cp, cp.cmdc == 'X')
+	filelooper(cp, cp.cmdc == "X")
 	return true
 }
 

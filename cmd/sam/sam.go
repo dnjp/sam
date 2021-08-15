@@ -292,7 +292,7 @@ func load(f *File) {
 	filename(f)
 	if len(f.name.s) > 0 {
 		saveaddr := addr
-		edit(f, 'I')
+		edit(f, "I")
 		addr = saveaddr
 	} else {
 		f.unread = false
@@ -349,12 +349,12 @@ func current(f *File) *File {
 	return curfile
 }
 
-func edit(f *File, cmd rune) {
+func edit(f *File, cmd string) {
 	empty := true
-	if cmd == 'r' {
+	if cmd == "r" {
 		logdelete(f, addr.r.p1, addr.r.p2)
 	}
-	if cmd == 'e' || cmd == 'I' {
+	if cmd == "e" || cmd == "I" {
 		logdelete(f, Posn(0), f.b.nc)
 		addr.r.p2 = f.b.nc
 	} else if f.b.nc != 0 || (f.name.s[0] != 0 && Strcmp(&genstr, &f.name) != 0) {
@@ -371,11 +371,11 @@ func edit(f *File, cmd rune) {
 	var nulls bool
 	p := readio(f, &nulls, empty, true)
 	cp := p
-	if cmd == 'e' || cmd == 'I' {
+	if cmd == "e" || cmd == "I" {
 		cp = -1
 	}
 	closeio(cp)
-	if cmd == 'r' {
+	if cmd == "r" {
 		f.ndot.r.p1 = addr.r.p2
 		f.ndot.r.p2 = addr.r.p2 + p
 	} else {
@@ -396,7 +396,7 @@ func edit(f *File, cmd rune) {
 	if empty && !nulls {
 		f.cleanseq = f.seq
 	}
-	if cmd == 'e' {
+	if cmd == "e" {
 		filename(f)
 	}
 }
@@ -499,7 +499,7 @@ func readcmd(s *String) int {
 
 	addr.r.p1 = 0
 	addr.r.p2 = flist.b.nc
-	retcode := plan9(flist, '<', s, false)
+	retcode := plan9(flist, "<", s, false)
 	fileupdate(flist, false, false)
 	flist.seq = 0
 	if flist.b.nc > BLOCKSIZE {

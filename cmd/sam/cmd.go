@@ -7,52 +7,58 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
 var linex = "\n"
 var wordx = " \t\n"
 
-var cmdtab []Cmdtab = nil
+var cmdtab map[string]Cmdtab = nil
 
-func init() { cmdtab = cmdtab1 } // break init loop
+func init() {
+	cmdtab = make(map[string]Cmdtab)
+	for _, cmd := range cmdtab1 {
+		cmdtab[cmd.cmdc] = cmd
+	}
+} // break init loop
 
 var cmdtab1 = []Cmdtab{
 	/*	cmdc	text	regexp	addr	defcmd	defaddr	count	token	 fn	*/
-	{'\n', false, false, false, 0, aDot, 0, "", nl_cmd},
-	{'a', true, false, false, 0, aDot, 0, "", a_cmd},
-	{'b', false, false, false, 0, aNo, 0, linex, b_cmd},
-	{'B', false, false, false, 0, aNo, 0, linex, b_cmd},
-	{'c', true, false, false, 0, aDot, 0, "", c_cmd},
-	{'d', false, false, false, 0, aDot, 0, "", d_cmd},
-	{'D', false, false, false, 0, aNo, 0, linex, D_cmd},
-	{'e', false, false, false, 0, aNo, 0, wordx, e_cmd},
-	{'f', false, false, false, 0, aNo, 0, wordx, f_cmd},
-	{'g', false, true, false, 'p', aDot, 0, "", g_cmd},
-	{'i', true, false, false, 0, aDot, 0, "", i_cmd},
-	{'k', false, false, false, 0, aDot, 0, "", k_cmd},
-	{'m', false, false, true, 0, aDot, 0, "", m_cmd},
-	{'n', false, false, false, 0, aNo, 0, "", n_cmd},
-	{'p', false, false, false, 0, aDot, 0, "", p_cmd},
-	{'q', false, false, false, 0, aNo, 0, "", q_cmd},
-	{'r', false, false, false, 0, aDot, 0, wordx, e_cmd},
-	{'s', false, true, false, 0, aDot, 1, "", s_cmd},
-	{'t', false, false, true, 0, aDot, 0, "", m_cmd},
-	{'u', false, false, false, 0, aNo, 2, "", u_cmd},
-	{'v', false, true, false, 'p', aDot, 0, "", g_cmd},
-	{'w', false, false, false, 0, aAll, 0, wordx, w_cmd},
-	{'x', false, true, false, 'p', aDot, 0, "", x_cmd},
-	{'y', false, true, false, 'p', aDot, 0, "", x_cmd},
-	{'X', false, true, false, 'f', aNo, 0, "", X_cmd},
-	{'Y', false, true, false, 'f', aNo, 0, "", X_cmd},
-	{'z', false, false, false, 0, aNo, 0, wordx, tw_cmd},
-	{'Z', false, false, false, 0, aNo, 0, "", te_cmd},
-	{'!', false, false, false, 0, aNo, 0, linex, plan9_cmd},
-	{'>', false, false, false, 0, aDot, 0, linex, plan9_cmd},
-	{'<', false, false, false, 0, aDot, 0, linex, plan9_cmd},
-	{'|', false, false, false, 0, aDot, 0, linex, plan9_cmd},
-	{'=', false, false, false, 0, aDot, 0, linex, eq_cmd},
-	{'c' | 0x100, false, false, false, 0, aNo, 0, wordx, cd_cmd},
+	{"\n", false, false, false, "", aDot, 0, "", nl_cmd},
+	{"a", true, false, false, "", aDot, 0, "", a_cmd},
+	{"b", false, false, false, "", aNo, 0, linex, b_cmd},
+	{"B", false, false, false, "", aNo, 0, linex, b_cmd},
+	{"c", true, false, false, "", aDot, 0, "", c_cmd},
+	{"d", false, false, false, "", aDot, 0, "", d_cmd},
+	{"D", false, false, false, "", aNo, 0, linex, D_cmd},
+	{"e", false, false, false, "", aNo, 0, wordx, e_cmd},
+	{"f", false, false, false, "", aNo, 0, wordx, f_cmd},
+	{"g", false, true, false, "p", aDot, 0, "", g_cmd},
+	{"i", true, false, false, "", aDot, 0, "", i_cmd},
+	{"k", false, false, false, "", aDot, 0, "", k_cmd},
+	{"m", false, false, true, "", aDot, 0, "", m_cmd},
+	{"n", false, false, false, "", aNo, 0, "", n_cmd},
+	{"p", false, false, false, "", aDot, 0, "", p_cmd},
+	{"q", false, false, false, "", aNo, 0, "", q_cmd},
+	{"r", false, false, false, "", aDot, 0, wordx, e_cmd},
+	{"s", false, true, false, "", aDot, 1, "", s_cmd},
+	{"t", false, false, true, "", aDot, 0, "", m_cmd},
+	{"u", false, false, false, "", aNo, 2, "", u_cmd},
+	{"v", false, true, false, "p", aDot, 0, "", g_cmd},
+	{"w", false, false, false, "", aAll, 0, wordx, w_cmd},
+	{"x", false, true, false, "p", aDot, 0, "", x_cmd},
+	{"y", false, true, false, "p", aDot, 0, "", x_cmd},
+	{"X", false, true, false, "f", aNo, 0, "", X_cmd},
+	{"Y", false, true, false, "f", aNo, 0, "", X_cmd},
+	{"z", false, false, false, "", aNo, 0, wordx, tw_cmd},
+	{"Z", false, false, false, "", aNo, 0, "", te_cmd},
+	{"!", false, false, false, "", aNo, 0, linex, plan9_cmd},
+	{">", false, false, false, "", aDot, 0, linex, plan9_cmd},
+	{"<", false, false, false, "", aDot, 0, linex, plan9_cmd},
+	{"|", false, false, false, "", aDot, 0, linex, plan9_cmd},
+	{"=", false, false, false, "", aDot, 0, linex, eq_cmd},
+	{"cd", false, false, false, "", aNo, 0, wordx, cd_cmd},
 }
 
 var line = make([]rune, 0, BLOCKSIZE)
@@ -319,13 +325,21 @@ func freecmd() {
 	stringlist = stringlist[:0]
 }
 
-func lookup(c rune) int {
-	for i := range cmdtab {
-		if cmdtab[i].cmdc == c {
-			return i
+func lookup(s []rune) string {
+	var key string
+	end := len(s)
+	for i := range s {
+		if !unicode.IsLetter(s[i]) {
+			end = i
+			break
 		}
 	}
-	return -1
+	key = string(s[:end])
+	_, ok := cmdtab[key]
+	if ok {
+		return key
+	}
+	return ""
 }
 
 func okdelim(c rune) {
@@ -443,18 +457,24 @@ func parsecmd(nest int) *Cmd {
 	if c == -1 {
 		return nil
 	}
-	cmd.cmdc = c
-	if cmd.cmdc == 'c' && nextc() == 'd' { /* sleazy two-character case */
-		getch() /* the 'd' */
-		cmd.cmdc = 'c' | 0x100
+
+	l := line[linep-1:]
+	key := lookup(l)
+	if len(key) > 1 {
+		for i := 1; i < len(key); i++ {
+			getch()
+		}
 	}
-	i := lookup(cmd.cmdc)
+	cmd.cmdc = string(c)
+	cmdt := cmdtab[key]
 	var cp *Cmd
-	if i >= 0 {
-		if cmd.cmdc == '\n' {
+
+	if key != "" {
+		cmd.cmdc = key
+		if cmd.cmdc == "\n" {
 			goto Return /* let nl_cmd work it all out */
 		}
-		ct := &cmdtab[i]
+		ct := &cmdt
 		if ct.defaddr == aNo && cmd.addr != nil {
 			error_(Enoaddr)
 		}
@@ -464,7 +484,11 @@ func parsecmd(nest int) *Cmd {
 		if ct.regexp {
 			/* x without pattern -> .*\n, indicated by cmd.re==0 */
 			/* X without pattern is all files */
-			if (ct.cmdc != 'x' && ct.cmdc != 'X') || func() bool { c = nextc(); return c != ' ' && c != '\t' && c != '\n' }() {
+			isalpha := func() bool {
+				c = nextc()
+				return c != ' ' && c != '\t' && c != '\n'
+			}
+			if (ct.cmdc != "x" && ct.cmdc != "X") || isalpha() {
 				skipbl()
 				c = getch()
 				if c == '\n' || c < 0 {
@@ -472,7 +496,7 @@ func parsecmd(nest int) *Cmd {
 				}
 				okdelim(c)
 				cmd.re = getregexp(c)
-				if ct.cmdc == 's' {
+				if ct.cmdc == "s" {
 					cmd.ctext = newstring()
 					getrhs(cmd.ctext, c, 's')
 					if nextc() == c {
@@ -492,7 +516,7 @@ func parsecmd(nest int) *Cmd {
 				error_(Eaddress)
 			}
 		}
-		if ct.defcmd != 0 {
+		if ct.defcmd != "" {
 			if skipbl() == '\n' {
 				getch()
 				cmd.ccmd = newcmd()
@@ -513,7 +537,7 @@ func parsecmd(nest int) *Cmd {
 	} else {
 		var ncp *Cmd
 		switch cmd.cmdc {
-		case '{':
+		case "{":
 			cp = nil
 			for {
 				if skipbl() == '\n' {
@@ -530,14 +554,14 @@ func parsecmd(nest int) *Cmd {
 					break
 				}
 			}
-		case '}':
+		case "}":
 			atnl()
 			if nest == 0 {
 				error_(Enolbrace)
 			}
 			return nil
 		default:
-			error_c(Eunk, cmd.cmdc)
+			error_c(Eunk, []rune(cmd.cmdc)[0])
 		}
 	}
 Return:
