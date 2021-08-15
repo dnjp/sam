@@ -459,8 +459,7 @@ func parsecmd(nest int) *Cmd {
 		return nil
 	}
 
-	l := line[linep-1:]
-	key := lookup(l)
+	key := lookup(line[linep-1:])
 	if len(key) > 1 {
 		for i := 1; i < len(key); i++ {
 			getch()
