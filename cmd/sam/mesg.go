@@ -119,7 +119,7 @@ func journalv(out int, v int64) {
 
 func journal(out int, s string) {}
 func journaln(out, n int)       {}
-func journalv(out, v int64)       {}
+func journalv(out, v int64)     {}
 
 var rcvchar_nleft int = 0
 var rcvchar_buf [64]uint8
