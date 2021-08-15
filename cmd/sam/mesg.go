@@ -25,9 +25,8 @@ var snarfbuf Buffer
 var waitack bool
 var outbuffered bool
 var tversion int
+var journal_file *os.File
 
-/*
-// #ifdef DEBUG
 var hname = [26]string{
 	Hversion:    "Hversion",
 	Hbindname:   "Hbindname",
@@ -84,32 +83,32 @@ var tname = [24]string{
 	Ttclick:       "Ttclick",
 }
 
-var journal_fd int = 0
+/*
+// #ifdef DEBUG
 
 func journal(out int, s string) {
-
-	if journal_fd <= 0 {
-		// journal_fd = create("/tmp/sam.out", 1, 0666)
+	if journal_file == nil {
+		f, err := os.OpenFile("/tmp/sam.out", os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			panic(err)
+		}
+		journal_file = f
 	}
-	var tmp8 unknown
+	var op string
 	if out != 0 {
-		tmp8 = "out: "
+		op = "out: "
 	} else {
-		tmp8 = "in:  "
+		op = "in:  "
 	}
-	fmt.Fprintf(journal_fd, "%s%s\n", tmp8, s)
+	fmt.Fprintf(journal_file, "%s%s\n", op, s)
 }
 
 func journaln(out int, n int) {
-	var buf [32]int8
-	snprint(buf, sizeof(buf), "%ld", n)
-	// journal(out, buf)
+	journal(out, fmt.Sprintf("%d", n))
 }
 
 func journalv(out int, v int64) {
-	var buf [32]int8
-	snprint(buf, sizeof(buf), "%lld", v)
-	// journal(out, buf)
+	journal(out, fmt.Sprintf("%d", v))
 }
 
 // #else
@@ -120,6 +119,7 @@ func journalv(out int, v int64) {
 
 func journal(out int, s string) {}
 func journaln(out, n int)       {}
+func journalv(out, v int64)     {}
 
 var rcvchar_nleft int = 0
 var rcvchar_buf [64]uint8
@@ -197,7 +197,7 @@ func inmesg(type_ Tmesg) bool {
 		panic_("inmesg")
 	}
 
-	// journal(0, tname[type_])
+	journal(0, tname[type_])
 
 	inp = indata
 	var buf [1025]rune
@@ -213,6 +213,7 @@ func inmesg(type_ Tmesg) bool {
 	var p Posn
 	var r Range
 	var str *String
+	debug("EV TYPE: %d", type_)
 	switch type_ {
 	case -1:
 		panic_("rcv error")
@@ -225,11 +226,11 @@ func inmesg(type_ Tmesg) bool {
 
 	case Tversion:
 		tversion = inshort()
-		// journaln(0, tversion)
+		journaln(0, tversion)
 
 	case Tstartcmdfile:
 		v = invlong() /* for 64-bit pointers */
-		// journaln(0, v)
+		journalv(0, v)
 		Strdupl(&genstr, samname)
 		cmd = newfile()
 		cmd.unread = false
@@ -253,8 +254,8 @@ func inmesg(type_ Tmesg) bool {
 		f = whichfile(inshort())
 		p0 = inlong()
 		p1 = p0 + inshort()
-		// journaln(0, p0)
-		// journaln(0, p1-p0)
+		journaln(0, p0)
+		journaln(0, p1-p0)
 		if f.unread {
 			panic_("Trequest: unread")
 		}
@@ -279,7 +280,7 @@ func inmesg(type_ Tmesg) bool {
 		s = inshort()
 		l = inlong()
 		l1 = inlong()
-		// journaln(0, l1)
+		journaln(0, l1)
 		lookorigin(whichfile(s), l, l1)
 
 	case Tstartfile:
@@ -291,7 +292,7 @@ func inmesg(type_ Tmesg) bool {
 		current(f)
 		outTsv(Hbindname, f.tag, invlong()) /* for 64-bit pointers */
 		outTs(Hcurrent, f.tag)
-		// journaln(0, f.tag)
+		journaln(0, f.tag)
 		if f.unread {
 			load(f)
 		} else {
@@ -310,15 +311,15 @@ func inmesg(type_ Tmesg) bool {
 		f.dot.r.p1 = inlong()
 		f.dot.r.p2 = inlong()
 		f.tdot = f.dot.r
-		// journaln(0, i)
-		// journaln(0, f.dot.r.p1)
-		// journaln(0, f.dot.r.p2)
+		journaln(0, i)
+		journaln(0, f.dot.r.p1)
+		journaln(0, f.dot.r.p2)
 
 	case Ttype:
 		f = whichfile(inshort())
 		p0 = inlong()
-		// journaln(0, p0)
-		// journal(0, (string)(inp))
+		journaln(0, p0)
+		journal(0, (string)(inp))
 		str = tmpcstr((string)(inp))
 		i = len(str.s)
 		debug("Ttype %s %d %q\n", f.name, p0, str)
@@ -341,8 +342,8 @@ func inmesg(type_ Tmesg) bool {
 		f = whichfile(inshort())
 		p0 = inlong()
 		p1 = inlong()
-		// journaln(0, p0)
-		// journaln(0, p1)
+		journaln(0, p0)
+		journaln(0, p1)
 		logdelete(f, p0, p1)
 		if fileupdate(f, false, false) {
 			seq++
@@ -354,7 +355,7 @@ func inmesg(type_ Tmesg) bool {
 	case Tpaste:
 		f = whichfile(inshort())
 		p0 = inlong()
-		// journaln(0, p0)
+		journaln(0, p0)
 		for l = 0; l < snarfbuf.nc; l += m {
 			m = snarfbuf.nc - l
 			if m > BLOCKSIZE {
@@ -392,7 +393,7 @@ func inmesg(type_ Tmesg) bool {
 	case Twrite:
 		termlocked++
 		i = inshort()
-		// journaln(0, i)
+		journaln(0, i)
 		f = whichfile(i)
 		addr.r.p1 = 0
 		addr.r.p2 = f.b.nc
@@ -401,11 +402,12 @@ func inmesg(type_ Tmesg) bool {
 		}
 		Strduplstr(&genstr, &f.name)
 		writef(f)
+		logwrite(f.name)
 
 	case Tclose:
 		termlocked++
 		i = inshort()
-		// journaln(0, i)
+		journaln(0, i)
 		f = whichfile(i)
 		current(f)
 		trytoclose(f)
@@ -417,8 +419,8 @@ func inmesg(type_ Tmesg) bool {
 		termlocked++
 		p0 = inlong()
 		p1 = inlong()
-		// journaln(0, p0)
-		// journaln(0, p1)
+		journaln(0, p0)
+		journaln(0, p1)
 		setgenstr(f, p0, p1)
 		for l = 0; l < len(genstr.s); l++ {
 			i := genstr.s[l]
@@ -632,7 +634,7 @@ func outTl(type_ Hmesg, l int) {
 
 func outTs(type_ Hmesg, s int) {
 	outstart(type_)
-	// journaln(1, s)
+	journaln(1, s)
 	outshort(s)
 	outsend()
 }
@@ -640,9 +642,9 @@ func outTs(type_ Hmesg, s int) {
 func outS(s *String) {
 	c := []byte(string(s.s)) // TODO(rsc)
 	outcopy(c)
-	// journaln(1, len(c))
+	journaln(1, len(c))
 	// if len(c) > 99 { c = c[:99] }
-	// journal(1, c)
+	journal(1, string(c))
 	// free(c)
 }
 
@@ -656,9 +658,9 @@ func outTsS(type_ Hmesg, s1 int, s *String) {
 func outTslS(type_ Hmesg, s1 int, l1 Posn, s *String) {
 	outstart(type_)
 	outshort(s1)
-	// journaln(1, s1)
+	journaln(1, s1)
 	outlong(l1)
-	// journaln(1, l1)
+	journaln(1, l1)
 	outS(s)
 	outsend()
 }
@@ -674,8 +676,8 @@ func outTsllS(type_ Hmesg, s1 int, l1 Posn, l2 Posn, s *String) {
 	outshort(s1)
 	outlong(l1)
 	outlong(l2)
-	// journaln(1, l1)
-	// journaln(1, l2)
+	journaln(1, l1)
+	journaln(1, l2)
 	outS(s)
 	outsend()
 }
@@ -685,8 +687,8 @@ func outTsll(type_ Hmesg, s int, l1 Posn, l2 Posn) {
 	outshort(s)
 	outlong(l1)
 	outlong(l2)
-	// journaln(1, l1)
-	// journaln(1, l2)
+	journaln(1, l1)
+	journaln(1, l2)
 	outsend()
 }
 
@@ -694,7 +696,7 @@ func outTsl(type_ Hmesg, s int, l Posn) {
 	outstart(type_)
 	outshort(s)
 	outlong(l)
-	// journaln(1, l)
+	journaln(1, l)
 	outsend()
 }
 
@@ -702,12 +704,12 @@ func outTsv(type_ Hmesg, s int, v int64) {
 	outstart(type_)
 	outshort(s)
 	outvlong(v)
-	// journaln(1, v)
+	journalv(1, v)
 	outsend()
 }
 
 func outstart(typ Hmesg) {
-	// journal(1, hname[type_])
+	journal(1, hname[typ])
 	outp = outmsg[len(outmsg):len(outmsg)]
 	outp = append(outp, byte(typ), 0, 0)
 }

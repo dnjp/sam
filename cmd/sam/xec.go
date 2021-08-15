@@ -279,6 +279,7 @@ func w_cmd(f *File, cp *Cmd) bool {
 		error_s(Ewseq, genc)
 	}
 	writef(f)
+	logwrite(f.name)
 	return true
 }
 

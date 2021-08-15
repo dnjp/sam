@@ -98,6 +98,10 @@ func main() {
 	}
 	siginit()
 	getcurwd()
+	if err := lognew(); err != nil {
+		panic(err)
+	}
+
 	if len(fileargs) > 0 {
 		for i := 0; i < len(fileargs); i++ {
 			func() {
