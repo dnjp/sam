@@ -16,7 +16,6 @@ func resetxec() {
 }
 
 func cmdexec(f *File, cp *Cmd) bool {
-	debug("EXEC: %+v\n", cp)
 	if f != nil && f.unread {
 		load(f)
 	}
