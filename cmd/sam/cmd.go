@@ -466,7 +466,6 @@ func parsecmd(nest int) *Cmd {
 		}
 	}
 	cmd.cmdc = string(c)
-	cmdt := cmdtab[key]
 	var cp *Cmd
 
 	if key != "" {
@@ -474,6 +473,7 @@ func parsecmd(nest int) *Cmd {
 		if cmd.cmdc == "\n" {
 			goto Return /* let nl_cmd work it all out */
 		}
+		cmdt := cmdtab[key]
 		ct := &cmdt
 		if ct.defaddr == aNo && cmd.addr != nil {
 			error_(Enoaddr)
@@ -484,11 +484,7 @@ func parsecmd(nest int) *Cmd {
 		if ct.regexp {
 			/* x without pattern -> .*\n, indicated by cmd.re==0 */
 			/* X without pattern is all files */
-			isalpha := func() bool {
-				c = nextc()
-				return c != ' ' && c != '\t' && c != '\n'
-			}
-			if (ct.cmdc != "x" && ct.cmdc != "X") || isalpha() {
+			if (ct.cmdc != "x" && ct.cmdc != "X") || func() bool { c = nextc(); return c != ' ' && c != '\t' && c != '\n' }() {
 				skipbl()
 				c = getch()
 				if c == '\n' || c < 0 {
@@ -506,7 +502,6 @@ func parsecmd(nest int) *Cmd {
 							cmd.flag = true
 						}
 					}
-
 				}
 			}
 		}
