@@ -25,6 +25,7 @@ var snarfbuf Buffer
 var waitack bool
 var outbuffered bool
 var tversion int
+var journal_file *os.File
 
 /*
 // #ifdef DEBUG
@@ -84,42 +85,38 @@ var tname = [24]string{
 	Ttclick:       "Ttclick",
 }
 
-var journal_fd int = 0
-
-func journal(out int, s string) {
-
-	if journal_fd <= 0 {
-		// journal_fd = create("/tmp/sam.out", 1, 0666)
-	}
-	var tmp8 unknown
-	if out != 0 {
-		tmp8 = "out: "
-	} else {
-		tmp8 = "in:  "
-	}
-	fmt.Fprintf(journal_fd, "%s%s\n", tmp8, s)
-}
-
-func journaln(out int, n int) {
-	var buf [32]int8
-	snprint(buf, sizeof(buf), "%ld", n)
-	// journal(out, buf)
-}
-
-func journalv(out int, v int64) {
-	var buf [32]int8
-	snprint(buf, sizeof(buf), "%lld", v)
-	// journal(out, buf)
-}
-
 // #else
 // #define	// journal(a, b)
 // #define journaln(a, b)
 // #endif
 */
 
-func journal(out int, s string) {}
-func journaln(out, n int)       {}
+func journal(out int, s string) {
+	if journal_file == nil {
+		f, err := os.OpenFile("/tmp/sam.out", 1, 0666)
+		if err != nil {
+			panic(err)
+		}
+		journal_file = f
+	}
+	var tmp8 string
+	if out != 0 {
+		tmp8 = "out: "
+	} else {
+		tmp8 = "in:  "
+	}
+	fmt.Fprintf(journal_file, "%s%s\n", tmp8, s)
+}
+
+func journaln(out int, n int) {
+	buf := fmt.Sprint("%ld", n)
+	journal(out, buf)
+}
+
+func journalv(out int, v int64) {
+	buf := fmt.Sprint("%lld", v)
+	journal(out, buf)
+}
 
 var rcvchar_nleft int = 0
 var rcvchar_buf [64]uint8
