@@ -359,6 +359,8 @@ Checkscroll:
 	}
 }
 
+// setlock sets the hostlock and switches to the
+// `lockarrow` cursor
 func setlock() {
 	hostlock++
 	cursor = &lockarrow
@@ -493,6 +495,7 @@ func outvlong(v int64) {
 	outcount += 8
 }
 
+// outsend sends the `outdata` to the hosts file descriptor
 func outsend() {
 	if outcount > DATASIZE-HSIZE {
 		panic("outcount>sizeof outdata")
@@ -646,6 +649,9 @@ func hplumb(nc int) {
 	}
 }
 
+// hgrow increases the size of the rasp to accomodate new input and
+// sends points to host which will send back the data within those
+// points and insert them into the rasp
 func hgrow(m int, a int, new int, req int) {
 	if new <= 0 {
 		panic("hgrow")
