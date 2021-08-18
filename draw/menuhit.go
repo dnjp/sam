@@ -172,7 +172,7 @@ func menuscrollpaint(m *Image, scrollr Rectangle, off, nitem, nitemdrawn int) {
 	m.Border(r, 1, menu.bord, ZP)
 	if menu.txt == nil {
 		display := m.Display
-		menu.txt, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, DarkGreen) /* border color; BUG? */
+		menu.txt, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0x676B6BFF) /* border color; BUG? */
 	}
 	if menu.txt != nil {
 		m.Draw(r.Inset(1), menu.txt, nil, ZP)

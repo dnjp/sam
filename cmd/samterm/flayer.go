@@ -21,16 +21,16 @@ func flstart(r image.Rectangle) {
 	lDrect = r
 
 	/* Main text is yellowish */
-	maincols[frame.BACK], _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0xFEFEFAFF)
-	maincols[frame.HIGH], _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0xE8EBE9FF)
-	maincols[frame.BORD], _ = display.AllocImage(image.Rect(0, 0, 2, 2), screen.Pix, true, 0x868787FF)
+	maincols[frame.BACK], _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0xFAFAF9FF)
+	maincols[frame.HIGH], _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0xEBE7E7FF)
+	maincols[frame.BORD], _ = display.AllocImage(image.Rect(0, 0, 2, 2), screen.Pix, true, 0xEBE7E7FF)
 	maincols[frame.TEXT] = display.Black
 	maincols[frame.HTEXT] = display.Black
 
 	/* Command text is blueish */
 	cmdcols[frame.BACK] = display.White
-	cmdcols[frame.HIGH], _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0xD2D7D3FF)
-	cmdcols[frame.BORD], _ = display.AllocImage(image.Rect(0, 0, 2, 2), screen.Pix, true, 0x868787FF)
+	cmdcols[frame.HIGH], _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0xBCB8B8FF)
+	cmdcols[frame.BORD], _ = display.AllocImage(image.Rect(0, 0, 2, 2), screen.Pix, true, 0xBCB8B8FF)
 	cmdcols[frame.TEXT] = display.Black
 	cmdcols[frame.HTEXT] = display.Black
 }
