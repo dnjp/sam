@@ -4,7 +4,7 @@ import (
 	"image"
 	"unicode/utf8"
 
-	"9fans.net/go/draw"
+	"github.com/dnjp/9fans/draw"
 )
 
 var name [][]uint8 /* first byte is ' ' or '\'': modified state */
@@ -56,6 +56,17 @@ var menu2 = draw.Menu{Gen: genmenu2}
 var menu2c = draw.Menu{Gen: genmenu2c}
 var menu3 = draw.Menu{Gen: genmenu3}
 
+func genmenucols() [draw.NCOL]*draw.Image {
+	var cols [draw.NCOL]*draw.Image
+	cols[draw.BACK], _ = display.AllocImage(image.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0xFFFFFFFF)
+	cols[draw.HIGH], _ = display.AllocImage(image.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0x676B6BFF)
+	cols[draw.BORD], _ = display.AllocImage(image.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, 0x676B6BFF)
+	cols[draw.TEXT], _ = display.AllocImage(image.Rect(0, 0, 2, 2), screen.Pix, true, draw.Black)
+	cols[draw.HTEXT] = cols[draw.BACK]
+	cols[draw.MTXT], _ = display.AllocImage(image.Rect(0, 0, 2, 2), screen.Pix, true, draw.Black)
+	return cols
+}
+
 func menu2hit() {
 	t := which.text
 	w := t.find(which)
@@ -66,6 +77,7 @@ func menu2hit() {
 	if t == &cmd {
 		menu = &menu2c
 	}
+	menu.Cols = genmenucols()
 	m := draw.MenuHit(2, mousectl, menu, nil)
 	if hostlock != 0 || t.lock != 0 {
 		return
@@ -108,7 +120,9 @@ func menu2hit() {
 
 func menu3hit() {
 	mw = -1
-	m := draw.MenuHit(3, mousectl, &menu3, nil)
+	menu := &menu3
+	menu.Cols = genmenucols()
+	m := draw.MenuHit(3, mousectl, menu, nil)
 	var r image.Rectangle
 	var l *Flayer
 	var i int

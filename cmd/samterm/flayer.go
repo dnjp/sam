@@ -4,8 +4,8 @@ import (
 	"image"
 	"math"
 
-	"9fans.net/go/draw"
-	"9fans.net/go/draw/frame"
+	"github.com/dnjp/9fans/draw"
+	"github.com/dnjp/9fans/draw/frame"
 )
 
 var llist []*Flayer /* front to back */
