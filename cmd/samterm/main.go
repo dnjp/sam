@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"9fans.net/go/draw"
+	"github.com/dnjp/sam/kb"
 )
 
 var (
@@ -599,33 +600,19 @@ func ktype(l *Flayer, res Resource) {
 		// block executes. ktype will run again immediately after
 		// we return to handle the '\t' key, where indentq is flushed
 		if indenting || unindenting {
+			var err error
 			indentq = indentq[:0]
 			txt := rload(&t.rasp, l.p0, l.p1)
-			if len(txt) < l.p1-l.p0 {
-				panic("indent")
-			}
-			tab := ltab(l)
-			if indenting {
-				indentq = append(indentq, tab...)
-			}
-			for i := 0; i < len(txt); i++ {
-				ch := txt[i]
-				if ch == '\n' && i+1 != len(txt) && txt[i+1] != 0 {
-					indentq = append(indentq, ch)
-					if indenting {
-						indentq = append(indentq, tab...)
-					}
-				} else {
-					if cont := stab(txt, i, tab); cont > 0 && unindenting {
-						if cont == 1 {
-							continue
-						} else {
-							i += cont - 1
-							continue
-						}
-					}
-					indentq = append(indentq, ch)
-				}
+			indentq, err = kb.IndentSelection(
+				txt,
+				l.p0,
+				l.p1,
+				l.text.tabwidth,
+				l.tabexpand,
+				unindenting,
+			)
+			if err != nil {
+				panic(err)
 			}
 		}
 		flushtyping(true)
@@ -655,7 +642,7 @@ func ktype(l *Flayer, res Resource) {
 				indentq = indentq[:0]
 				continue
 			}
-			kinput = append(kinput, ltab(l)...)
+			kinput = append(kinput, kb.Tab(l.text.tabwidth, l.tabexpand)...)
 		} else {
 			kinput = append(kinput, c)
 		}
@@ -824,40 +811,6 @@ func ktype(l *Flayer, res Resource) {
 			break
 		}
 	}
-}
-
-func stab(text []rune, i int, tab []rune) int {
-	txtlen := len(text)
-	tablen := len(tab)
-	// i is out of bounds
-	if (tablen == 1 && i > txtlen) || (tablen > 1 && i+(tablen-1) > txtlen) {
-		return -1
-	}
-	// not at the start of the line
-	if i > 0 && text[i-1] != '\n' {
-		return -1
-	}
-	found := 0
-	for j := i; j < i+tablen; j++ {
-		if text[j] == '\t' || text[j] == ' ' {
-			found++
-		}
-	}
-	if found < len(tab) {
-		return -1
-	}
-	return found
-}
-
-func ltab(l *Flayer) []rune {
-	tab := []rune{'\t'}
-	if l.tabexpand {
-		tab = []rune{}
-		for i := 0; i < l.text.tabwidth; i++ {
-			tab = append(tab, ' ')
-		}
-	}
-	return tab
 }
 
 func incr(v *int) int {
