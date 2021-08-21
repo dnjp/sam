@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/dnjp/sam/mesg"
 )
 
 /* extern var mainloop jmp_buf */
@@ -114,7 +116,7 @@ func plan9(f *File, type_ string, s *String, nest bool) int {
 	switch type_ {
 	case "<", "|":
 		if downloaded && addr.r.p1 != addr.r.p2 {
-			outTl(Hsnarflen, addr.r.p2-addr.r.p1)
+			outTl(mesg.Hsnarflen, addr.r.p2-addr.r.p1)
 		}
 		snarf(f, addr.r.p1, addr.r.p2, &snarfbuf, 0)
 		logdelete(f, addr.r.p1, addr.r.p2)

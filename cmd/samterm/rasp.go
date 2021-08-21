@@ -1,5 +1,7 @@
 package main
 
+import "github.com/dnjp/sam/mesg"
+
 func rinit(r *Rasp) {
 	r.nrunes = 0
 	r.sect = nil
@@ -76,7 +78,7 @@ func splitsect(r *Rasp, s *Section, n0 int) {
 	if s.text == nil {
 		s.next.text = nil
 	} else {
-		s.next.text = make([]rune, TBLOCKSIZE)
+		s.next.text = make([]rune, mesg.TBLOCKSIZE)
 		copy(s.next.text, s.text[n0:s.nrunes])
 	}
 	s.next.nrunes = s.nrunes - n0
@@ -127,7 +129,7 @@ func rdata(r *Rasp, p0 int, p1 int, cp []rune) {
 	}
 	p1 -= p0
 	s = rsinsert(r, t)
-	s.text = make([]rune, TBLOCKSIZE)
+	s.text = make([]rune, mesg.TBLOCKSIZE)
 	copy(s.text, cp[:p1])
 	s.nrunes = p1
 }
@@ -137,7 +139,7 @@ func rclean(r *Rasp) {
 	for s := r.sect; s != nil; s = s.next {
 		for s.next != nil && (s.text != nil) == (s.next.text != nil) {
 			if s.text != nil {
-				if s.nrunes+s.next.nrunes > TBLOCKSIZE {
+				if s.nrunes+s.next.nrunes > mesg.TBLOCKSIZE {
 					break
 				}
 				copy(s.text[s.nrunes:s.nrunes+s.next.nrunes], s.next.text[:s.next.nrunes])

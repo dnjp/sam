@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"unicode/utf8"
+
+	"github.com/dnjp/sam/mesg"
 )
 
 const (
@@ -240,5 +242,5 @@ func startup(machine string, Rflag bool, argv []string, files []string) {
 		bootterm(machine, argv)
 	}
 	downloaded = true
-	outTs(Hversion, VERSION)
+	outTs(mesg.Hversion, mesg.VERSION)
 }

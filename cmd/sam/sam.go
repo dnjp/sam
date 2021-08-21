@@ -12,6 +12,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/dnjp/sam/mesg"
 )
 
 var genbuf [BLOCKSIZE]rune
@@ -249,7 +251,7 @@ func hiccough(s string) {
 		if curfile.unread {
 			curfile.unread = false
 		} else if downloaded {
-			outTs(Hcurrent, curfile.tag)
+			outTs(mesg.Hcurrent, curfile.tag)
 		}
 	}
 	panic(&mainloop)
@@ -317,7 +319,7 @@ func cmdupdate() {
 
 func delete(f *File) {
 	if downloaded && f.rasp != nil {
-		outTs(Hclose, f.tag)
+		outTs(mesg.Hclose, f.tag)
 	}
 	delfile(f)
 	if f == curfile {

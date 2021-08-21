@@ -2,7 +2,11 @@
 
 package main
 
-import "path/filepath"
+import (
+	"path/filepath"
+
+	"github.com/dnjp/sam/mesg"
+)
 
 var file []*File
 var tag int
@@ -13,7 +17,7 @@ func newfile() *File {
 	f.tag = tag
 	tag++
 	if downloaded {
-		outTs(Hnewname, f.tag)
+		outTs(mesg.Hnewname, f.tag)
 	}
 	/* already sorted; file name is "" */
 	return f
@@ -34,7 +38,7 @@ func delfile(f *File) {
 		return
 	}
 	if downloaded {
-		outTs(Hdelname, f.tag)
+		outTs(mesg.Hdelname, f.tag)
 	}
 	delfilelist(w)
 	fileclose(f)
@@ -91,7 +95,7 @@ func sortname(f *File) {
 	}
 	insfilelist(i, f)
 	if downloaded {
-		outTsS(Hmovname, f.tag, &f.name)
+		outTsS(mesg.Hmovname, f.tag, &f.name)
 	}
 }
 
@@ -108,9 +112,9 @@ func state(f *File, cleandirty State) {
 	f.unread = false
 	if downloaded && whichmenu(f) >= 0 { /* else flist or menu */
 		if f.mod && cleandirty != Dirty {
-			outTs(Hclean, f.tag)
+			outTs(mesg.Hclean, f.tag)
 		} else if !f.mod && cleandirty == Dirty {
-			outTs(Hdirty, f.tag)
+			outTs(mesg.Hdirty, f.tag)
 		}
 	}
 	if cleandirty == Clean {

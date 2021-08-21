@@ -9,16 +9,17 @@ import (
 	"strings"
 
 	"github.com/dnjp/9fans/plumb"
+	"github.com/dnjp/sam/mesg"
 )
 
 // #include "sam.h"
-var h Header
-var indata = make([]byte, DATASIZE)
+var h mesg.Header
+var indata = make([]byte, mesg.DATASIZE)
 var inp []uint8
 
-var outdata [2*DATASIZE + 3]uint8 /* room for overflow message */
-var outmsg = outdata[:0]          // messages completed but not sent
-var outp []uint8                  // message being created in spare capacity of outmsg
+var outdata [2*mesg.DATASIZE + 3]uint8 /* room for overflow message */
+var outmsg = outdata[:0]               // messages completed but not sent
+var outp []uint8                       // message being created in spare capacity of outmsg
 var cmdpt Posn
 var cmdptadv Posn
 var snarfbuf Buffer
@@ -28,59 +29,59 @@ var tversion int
 var journal_file *os.File
 
 var hname = [26]string{
-	Hversion:    "Hversion",
-	Hbindname:   "Hbindname",
-	Hcurrent:    "Hcurrent",
-	Hnewname:    "Hnewname",
-	Hmovname:    "Hmovname",
-	Hgrow:       "Hgrow",
-	Hcheck0:     "Hcheck0",
-	Hcheck:      "Hcheck",
-	Hunlock:     "Hunlock",
-	Hdata:       "Hdata",
-	Horigin:     "Horigin",
-	Hunlockfile: "Hunlockfile",
-	Hsetdot:     "Hsetdot",
-	Hgrowdata:   "Hgrowdata",
-	Hmoveto:     "Hmoveto",
-	Hclean:      "Hclean",
-	Hdirty:      "Hdirty",
-	Hcut:        "Hcut",
-	Hsetpat:     "Hsetpat",
-	Hdelname:    "Hdelname",
-	Hclose:      "Hclose",
-	Hsetsnarf:   "Hsetsnarf",
-	Hsnarflen:   "Hsnarflen",
-	Hack:        "Hack",
-	Hexit:       "Hexit",
-	Hplumb:      "Hplumb",
+	mesg.Hversion:    "Hversion",
+	mesg.Hbindname:   "Hbindname",
+	mesg.Hcurrent:    "mesg.Hcurrent",
+	mesg.Hnewname:    "Hnewname",
+	mesg.Hmovname:    "Hmovname",
+	mesg.Hgrow:       "Hgrow",
+	mesg.Hcheck0:     "mesg.Hcheck0",
+	mesg.Hcheck:      "mesg.Hcheck",
+	mesg.Hunlock:     "mesg.Hunlock",
+	mesg.Hdata:       "mesg.Hdata",
+	mesg.Horigin:     "Horigin",
+	mesg.Hunlockfile: "mesg.Hunlockfile",
+	mesg.Hsetdot:     "Hsetdot",
+	mesg.Hgrowdata:   "Hgrowdata",
+	mesg.Hmoveto:     "Hmoveto",
+	mesg.Hclean:      "Hclean",
+	mesg.Hdirty:      "Hdirty",
+	mesg.Hcut:        "Hcut",
+	mesg.Hsetpat:     "Hsetpat",
+	mesg.Hdelname:    "Hdelname",
+	mesg.Hclose:      "Hclose",
+	mesg.Hsetsnarf:   "Hsetsnarf",
+	mesg.Hsnarflen:   "Hsnarflen",
+	mesg.Hack:        "Hack",
+	mesg.Hexit:       "Hexit",
+	mesg.Hplumb:      "Hplumb",
 }
 
 var tname = [24]string{
-	Tversion:      "Tversion",
-	Tstartcmdfile: "Tstartcmdfile",
-	Tcheck:        "Tcheck",
-	Trequest:      "Trequest",
-	Torigin:       "Torigin",
-	Tstartfile:    "Tstartfile",
-	Tworkfile:     "Tworkfile",
-	Ttype:         "Ttype",
-	Tcut:          "Tcut",
-	Tpaste:        "Tpaste",
-	Tsnarf:        "Tsnarf",
-	Tstartnewfile: "Tstartnewfile",
-	Twrite:        "Twrite",
-	Tclose:        "Tclose",
-	Tlook:         "Tlook",
-	Tsearch:       "Tsearch",
-	Tsend:         "Tsend",
-	Tdclick:       "Tdclick",
-	Tstartsnarf:   "Tstartsnarf",
-	Tsetsnarf:     "Tsetsnarf",
-	Tack:          "Tack",
-	Texit:         "Texit",
-	Tplumb:        "Tplumb",
-	Ttclick:       "Ttclick",
+	mesg.Tversion:      "mesg.Tversion",
+	mesg.Tstartcmdfile: "Tstartcmdfile",
+	mesg.Tcheck:        "mesg.Tcheck",
+	mesg.Trequest:      "mesg.Trequest",
+	mesg.Torigin:       "Torigin",
+	mesg.Tstartfile:    "Tstartfile",
+	mesg.Tworkfile:     "Tworkfile",
+	mesg.Ttype:         "Ttype",
+	mesg.Tcut:          "Tcut",
+	mesg.Tpaste:        "Tpaste",
+	mesg.Tsnarf:        "Tsnarf",
+	mesg.Tstartnewfile: "Tstartnewfile",
+	mesg.Twrite:        "Twrite",
+	mesg.Tclose:        "Tclose",
+	mesg.Tlook:         "Tlook",
+	mesg.Tsearch:       "Tsearch",
+	mesg.Tsend:         "Tsend",
+	mesg.Tdclick:       "Tdclick",
+	mesg.Tstartsnarf:   "Tstartsnarf",
+	mesg.Tsetsnarf:     "Tsetsnarf",
+	mesg.Tack:          "Tack",
+	mesg.Texit:         "Texit",
+	mesg.Tplumb:        "Tplumb",
+	mesg.Ttclick:       "Ttclick",
 }
 
 /*
@@ -148,24 +149,24 @@ func rcv() bool {
 	for c := rcvchar(); c >= 0; c = rcvchar() {
 		switch rcv_state {
 		case 0:
-			h.typ = Tmesg(c)
+			h.Typ = mesg.Tmesg(c).Wire()
 			rcv_state++
 
 		case 1:
-			h.count0 = uint8(c)
+			h.Count0 = uint8(c)
 			rcv_state++
 
 		case 2:
-			h.count1 = uint8(c)
-			rcv_count = int(h.count0) | int(h.count1)<<8
-			if rcv_count > DATASIZE {
-				panic_("count>DATASIZE")
+			h.Count1 = uint8(c)
+			rcv_count = int(h.Count0) | int(h.Count1)<<8
+			if rcv_count > mesg.DATASIZE {
+				panic_("count>mesg.DATASIZE")
 			}
 			indata = indata[:0]
 			if rcv_count == 0 {
 				rcv_count = 0
 				rcv_state = 0
-				return inmesg(h.typ)
+				return inmesg(mesg.Tmesg(h.Typ))
 			}
 			rcv_state++
 
@@ -174,7 +175,7 @@ func rcv() bool {
 			if len(indata) == rcv_count {
 				rcv_count = 0
 				rcv_state = 0
-				return inmesg(h.typ)
+				return inmesg(mesg.Tmesg(h.Typ))
 			}
 		}
 	}
@@ -191,9 +192,9 @@ func whichfile(tag int) *File {
 	return nil
 }
 
-func inmesg(type_ Tmesg) bool {
+func inmesg(type_ mesg.Tmesg) bool {
 	debug("inmesg %v %x\n", type_, indata)
-	if type_ > TMAX {
+	if type_ > mesg.TMAX {
 		panic_("inmesg")
 	}
 
@@ -224,18 +225,18 @@ func inmesg(type_ Tmesg) bool {
 		panic_("rcv unknown")
 		fallthrough
 
-	case Tversion:
+	case mesg.Tversion:
 		tversion = inshort()
 		journaln(0, tversion)
 
-	case Tstartcmdfile:
+	case mesg.Tstartcmdfile:
 		v = invlong() /* for 64-bit pointers */
 		journalv(0, v)
 		Strdupl(&genstr, samname)
 		cmd = newfile()
 		cmd.unread = false
-		outTsv(Hbindname, cmd.tag, v)
-		outTs(Hcurrent, cmd.tag)
+		outTsv(mesg.Hbindname, cmd.tag, v)
+		outTs(mesg.Hcurrent, cmd.tag)
 		logsetname(cmd, &genstr)
 		cmd.rasp = new(PosnList)
 		cmd.mod = false
@@ -244,20 +245,20 @@ func inmesg(type_ Tmesg) bool {
 			Strdelete(&cmdstr, 0, Posn(len(cmdstr.s)))
 		}
 		fileupdate(cmd, false, true)
-		outT0(Hunlock)
+		outT0(mesg.Hunlock)
 	/* go through whichfile to check the tag */
 
-	case Tcheck:
-		outTs(Hcheck, whichfile(inshort()).tag)
+	case mesg.Tcheck:
+		outTs(mesg.Hcheck, whichfile(inshort()).tag)
 
-	case Trequest:
+	case mesg.Trequest:
 		f = whichfile(inshort())
 		p0 = inlong()
 		p1 = p0 + inshort()
 		journaln(0, p0)
 		journaln(0, p1-p0)
 		if f.unread {
-			panic_("Trequest: unread")
+			panic_("mesg.Trequest: unread")
 		}
 		if p1 > f.b.nc {
 			p1 = f.b.nc
@@ -274,37 +275,37 @@ func inmesg(type_ Tmesg) bool {
 			i = r.p2 - r.p1
 			bufread(&f.b, r.p1, buf[:i])
 		}
-		outTslS(Hdata, f.tag, r.p1, tmprstr(buf[:i]))
+		outTslS(mesg.Hdata, f.tag, r.p1, tmprstr(buf[:i]))
 
-	case Torigin:
+	case mesg.Torigin:
 		s = inshort()
 		l = inlong()
 		l1 = inlong()
 		journaln(0, l1)
 		lookorigin(whichfile(s), l, l1)
 
-	case Tstartfile:
+	case mesg.Tstartfile:
 		termlocked++
 		f = whichfile(inshort())
 		if f.rasp == nil { /* this might be a duplicate message */
 			f.rasp = new(PosnList)
 		}
 		current(f)
-		outTsv(Hbindname, f.tag, invlong()) /* for 64-bit pointers */
-		outTs(Hcurrent, f.tag)
+		outTsv(mesg.Hbindname, f.tag, invlong()) /* for 64-bit pointers */
+		outTs(mesg.Hcurrent, f.tag)
 		journaln(0, f.tag)
 		if f.unread {
 			load(f)
 		} else {
 			if f.b.nc > 0 {
 				rgrow(f.rasp, 0, f.b.nc)
-				outTsll(Hgrow, f.tag, 0, f.b.nc)
+				outTsll(mesg.Hgrow, f.tag, 0, f.b.nc)
 			}
-			outTs(Hcheck0, f.tag)
+			outTs(mesg.Hcheck0, f.tag)
 			moveto(f, f.dot.r)
 		}
 
-	case Tworkfile:
+	case mesg.Tworkfile:
 		i = inshort()
 		f = whichfile(i)
 		current(f)
@@ -315,7 +316,7 @@ func inmesg(type_ Tmesg) bool {
 		journaln(0, f.dot.r.p1)
 		journaln(0, f.dot.r.p2)
 
-	case Ttype:
+	case mesg.Ttype:
 		f = whichfile(inshort())
 		p0 = inlong()
 		journaln(0, p0)
@@ -338,7 +339,7 @@ func inmesg(type_ Tmesg) bool {
 		f.dot.r.p1 = f.dot.r.p2
 		f.tdot = f.dot.r
 
-	case Tcut:
+	case mesg.Tcut:
 		f = whichfile(inshort())
 		p0 = inlong()
 		p1 = inlong()
@@ -352,7 +353,7 @@ func inmesg(type_ Tmesg) bool {
 		f.dot.r.p1 = f.dot.r.p2
 		f.tdot = f.dot.r /* terminal knows the value of dot already */
 
-	case Tpaste:
+	case mesg.Tpaste:
 		f = whichfile(inshort())
 		p0 = inlong()
 		journaln(0, p0)
@@ -371,26 +372,26 @@ func inmesg(type_ Tmesg) bool {
 		f.dot.r.p2 = p0 + snarfbuf.nc
 		f.tdot.p1 = -1 /* force telldot to tell (arguably a BUG) */
 		telldot(f)
-		outTs(Hunlockfile, f.tag)
+		outTs(mesg.Hunlockfile, f.tag)
 
-	case Tsnarf:
+	case mesg.Tsnarf:
 		i = inshort()
 		p0 = inlong()
 		p1 = inlong()
 		snarf(whichfile(i), p0, p1, &snarfbuf, 0)
 
-	case Tstartnewfile:
+	case mesg.Tstartnewfile:
 		v = invlong()
 		Strdupl(&genstr, empty)
 		f = newfile()
 		f.rasp = new(PosnList)
-		outTsv(Hbindname, f.tag, v)
+		outTsv(mesg.Hbindname, f.tag, v)
 		logsetname(f, &genstr)
-		outTs(Hcurrent, f.tag)
+		outTs(mesg.Hcurrent, f.tag)
 		current(f)
 		load(f)
 
-	case Twrite:
+	case mesg.Twrite:
 		termlocked++
 		i = inshort()
 		journaln(0, i)
@@ -404,7 +405,7 @@ func inmesg(type_ Tmesg) bool {
 		writef(f)
 		logwrite(f.name)
 
-	case Tclose:
+	case mesg.Tclose:
 		termlocked++
 		i = inshort()
 		journaln(0, i)
@@ -414,7 +415,7 @@ func inmesg(type_ Tmesg) bool {
 		/* if trytoclose fails, will error out */
 		delete(f)
 
-	case Tlook:
+	case mesg.Tlook:
 		f = whichfile(inshort())
 		termlocked++
 		p0 = inlong()
@@ -434,7 +435,7 @@ func inmesg(type_ Tmesg) bool {
 		nextmatch(f, &genstr, p1, 1)
 		moveto(f, sel.p[0])
 
-	case Tsearch:
+	case mesg.Tsearch:
 		termlocked++
 		if curfile == nil {
 			error_(Enofile)
@@ -445,7 +446,7 @@ func inmesg(type_ Tmesg) bool {
 		nextmatch(curfile, &lastpat, curfile.dot.r.p2, 1)
 		moveto(curfile, sel.p[0])
 
-	case Tsend:
+	case mesg.Tsend:
 		termlocked++
 		inshort() /* ignored */
 		p0 = inlong()
@@ -453,7 +454,7 @@ func inmesg(type_ Tmesg) bool {
 		setgenstr(cmd, p0, p1)
 		bufreset(&snarfbuf)
 		bufinsert(&snarfbuf, Posn(0), genstr.s)
-		outTl(Hsnarflen, len(genstr.s))
+		outTl(mesg.Hsnarflen, len(genstr.s))
 		if len(genstr.s) > 0 && genstr.s[len(genstr.s)-1] != '\n' {
 			Straddc(&genstr, '\n')
 		}
@@ -464,38 +465,38 @@ func inmesg(type_ Tmesg) bool {
 		telldot(cmd)
 		termcommand()
 
-	case Tdclick:
+	case mesg.Tdclick:
 		fallthrough
-	case Ttclick:
+	case mesg.Ttclick:
 		f = whichfile(inshort())
 		p1 = inlong()
-		stretchsel(f, p1, type_ == Ttclick)
+		stretchsel(f, p1, type_ == mesg.Ttclick)
 		f.tdot.p2 = p1
 		f.tdot.p1 = f.tdot.p2
 		telldot(f)
-		outTs(Hunlockfile, f.tag)
+		outTs(mesg.Hunlockfile, f.tag)
 
-	case Tstartsnarf:
+	case mesg.Tstartsnarf:
 		if snarfbuf.nc <= 0 { /* nothing to export */
-			outTs(Hsetsnarf, 0)
+			outTs(mesg.Hsetsnarf, 0)
 			break
 		}
 		m = snarfbuf.nc
-		if m > SNARFSIZE {
-			m = SNARFSIZE
+		if m > mesg.SNARFSIZE {
+			m = mesg.SNARFSIZE
 			dprint("?warning: snarf buffer truncated\n")
 		}
 		rp := make([]rune, m)
 		bufread(&snarfbuf, 0, rp)
 		c := []byte(string(rp)) // TODO(rsc)
 		// free(rp)
-		outTs(Hsetsnarf, len(c))
+		outTs(mesg.Hsetsnarf, len(c))
 		os.Stdout.Write(c)
 		// free(c)
 
-	case Tsetsnarf:
+	case mesg.Tsetsnarf:
 		m = inshort()
-		if m > SNARFSIZE {
+		if m > mesg.SNARFSIZE {
 			error_(Etoolong)
 		}
 		c := make([]byte, m)
@@ -507,12 +508,12 @@ func inmesg(type_ Tmesg) bool {
 		bufreset(&snarfbuf)
 		bufinsert(&snarfbuf, Posn(0), str)
 		// freetmpstr(str)
-		outT0(Hunlock)
+		outT0(mesg.Hunlock)
 
-	case Tack:
+	case mesg.Tack:
 		waitack = false
 
-	case Tplumb:
+	case mesg.Tplumb:
 		f = whichfile(inshort())
 		p0 = inlong()
 		p1 = inlong()
@@ -550,12 +551,12 @@ func inmesg(type_ Tmesg) bool {
 		pm.Data = []byte(string(genstr.s))
 		var enc bytes.Buffer
 		pm.Send(&enc)
-		outTs(Hplumb, enc.Len())
+		outTs(mesg.Hplumb, enc.Len())
 		os.Stdout.Write(enc.Bytes())
 		// free(enc)
 		// plumbfree(pm)
 
-	case Texit:
+	case mesg.Texit:
 		os.Exit(0)
 	}
 	return true
@@ -602,7 +603,7 @@ func invlong() int64 {
 
 func setgenstr(f *File, p0 Posn, p1 Posn) {
 	if p0 != p1 {
-		if p1-p0 >= TBLOCKSIZE {
+		if p1-p0 >= mesg.TBLOCKSIZE {
 			error_(Etoolong)
 		}
 		Strinsure(&genstr, p1-p0)
@@ -612,7 +613,7 @@ func setgenstr(f *File, p0 Posn, p1 Posn) {
 		if snarfbuf.nc == 0 {
 			error_(Eempty)
 		}
-		if snarfbuf.nc > TBLOCKSIZE {
+		if snarfbuf.nc > mesg.TBLOCKSIZE {
 			error_(Etoolong)
 		}
 		bufread(&snarfbuf, Posn(0), genbuf[:snarfbuf.nc])
@@ -621,18 +622,18 @@ func setgenstr(f *File, p0 Posn, p1 Posn) {
 	}
 }
 
-func outT0(type_ Hmesg) {
+func outT0(type_ mesg.Hmesg) {
 	outstart(type_)
 	outsend()
 }
 
-func outTl(type_ Hmesg, l int) {
+func outTl(type_ mesg.Hmesg, l int) {
 	outstart(type_)
 	outlong(l)
 	outsend()
 }
 
-func outTs(type_ Hmesg, s int) {
+func outTs(type_ mesg.Hmesg, s int) {
 	outstart(type_)
 	journaln(1, s)
 	outshort(s)
@@ -648,14 +649,14 @@ func outS(s *String) {
 	// free(c)
 }
 
-func outTsS(type_ Hmesg, s1 int, s *String) {
+func outTsS(type_ mesg.Hmesg, s1 int, s *String) {
 	outstart(type_)
 	outshort(s1)
 	outS(s)
 	outsend()
 }
 
-func outTslS(type_ Hmesg, s1 int, l1 Posn, s *String) {
+func outTslS(type_ mesg.Hmesg, s1 int, l1 Posn, s *String) {
 	outstart(type_)
 	outshort(s1)
 	journaln(1, s1)
@@ -665,13 +666,13 @@ func outTslS(type_ Hmesg, s1 int, l1 Posn, s *String) {
 	outsend()
 }
 
-func outTS(type_ Hmesg, s *String) {
+func outTS(type_ mesg.Hmesg, s *String) {
 	outstart(type_)
 	outS(s)
 	outsend()
 }
 
-func outTsllS(type_ Hmesg, s1 int, l1 Posn, l2 Posn, s *String) {
+func outTsllS(type_ mesg.Hmesg, s1 int, l1 Posn, l2 Posn, s *String) {
 	outstart(type_)
 	outshort(s1)
 	outlong(l1)
@@ -682,7 +683,7 @@ func outTsllS(type_ Hmesg, s1 int, l1 Posn, l2 Posn, s *String) {
 	outsend()
 }
 
-func outTsll(type_ Hmesg, s int, l1 Posn, l2 Posn) {
+func outTsll(type_ mesg.Hmesg, s int, l1 Posn, l2 Posn) {
 	outstart(type_)
 	outshort(s)
 	outlong(l1)
@@ -692,7 +693,7 @@ func outTsll(type_ Hmesg, s int, l1 Posn, l2 Posn) {
 	outsend()
 }
 
-func outTsl(type_ Hmesg, s int, l Posn) {
+func outTsl(type_ mesg.Hmesg, s int, l Posn) {
 	outstart(type_)
 	outshort(s)
 	outlong(l)
@@ -700,7 +701,7 @@ func outTsl(type_ Hmesg, s int, l Posn) {
 	outsend()
 }
 
-func outTsv(type_ Hmesg, s int, v int64) {
+func outTsv(type_ mesg.Hmesg, s int, v int64) {
 	outstart(type_)
 	outshort(s)
 	outvlong(v)
@@ -708,7 +709,7 @@ func outTsv(type_ Hmesg, s int, v int64) {
 	outsend()
 }
 
-func outstart(typ Hmesg) {
+func outstart(typ mesg.Hmesg) {
 	// journal(1, hname[typ])
 	outp = outmsg[len(outmsg):len(outmsg)]
 	outp = append(outp, byte(typ), 0, 0)
@@ -750,7 +751,7 @@ func outsend() {
 }
 
 func needoutflush() bool {
-	return len(outmsg) >= DATASIZE
+	return len(outmsg) >= mesg.DATASIZE
 }
 
 func outflush() {
@@ -759,7 +760,7 @@ func outflush() {
 	}
 	outbuffered = false
 	/* flow control */
-	outT0(Hack)
+	outT0(mesg.Hack)
 	waitack = true
 	for {
 		if !rcv() {
