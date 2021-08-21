@@ -545,6 +545,7 @@ const (
 	CUT           = draw.KeyCmd + 'x'
 	COPY          = draw.KeyCmd + 'c'
 	PASTE         = draw.KeyCmd + 'v'
+	UNDO          = draw.KeyCmd + 'z'
 	BACK          = 0x02 // ctrl+b
 	LAST          = 0x07 // ctrl+g
 )
@@ -564,6 +565,7 @@ func nontypingkey(c rune) bool {
 		CUT,
 		COPY,
 		PASTE,
+		UNDO,
 		BACK,
 		LAST:
 		return true
@@ -717,6 +719,9 @@ func ktype(l *Flayer, res Resource) {
 				flsetselect(l, l.p0, l.p1)
 			}
 		}
+	} else if c == UNDO {
+		flushtyping(false)
+		outTs(mesg.Tundo, t.tag)
 	} else if backspacing != 0 && hostlock == 0 {
 		/* backspacing immediately after outcmd(): sorry */
 		if l.f.P0 > 0 && a > 0 {
