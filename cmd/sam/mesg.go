@@ -709,7 +709,7 @@ func outTsv(type_ Hmesg, s int, v int64) {
 }
 
 func outstart(typ Hmesg) {
-	journal(1, hname[typ])
+	// journal(1, hname[typ])
 	outp = outmsg[len(outmsg):len(outmsg)]
 	outp = append(outp, byte(typ), 0, 0)
 }

@@ -132,6 +132,7 @@ func rdata(r *Rasp, p0 int, p1 int, cp []rune) {
 	s.nrunes = p1
 }
 
+// rclean joins all Sections in the linked list into a single Section
 func rclean(r *Rasp) {
 	for s := r.sect; s != nil; s = s.next {
 		for s.next != nil && (s.text != nil) == (s.next.text != nil) {
@@ -149,13 +150,18 @@ func rclean(r *Rasp) {
 
 var raspbuf []rune
 
+// rload returns the content cached between the given points
 func rload(r *Rasp, p0 int, p1 int) []rune {
+	// initialize raspbuf to size (p1-p0) in logarithmic time.
+	// raspbuf[:cap(raspbuf)] returns a slice of 0's with
+	// the lengh of the slices capacity.
 	for cap(raspbuf) < p1-p0 {
 		raspbuf = append(raspbuf[:cap(raspbuf)], 0)
 	}
 
 	p := 0
 	s := r.sect
+	// find the section starting with p0
 	for ; s != nil && p+s.nrunes <= p0; s = s.next {
 		p += s.nrunes
 	}

@@ -476,6 +476,8 @@ func twothirds(l *Flayer, a int) bool {
 	return thirds(l, a, 2)
 }
 
+// flushtyping sets the current state based on
+// what was typed.
 func flushtyping(clearesc bool) {
 	if clearesc {
 		typeesc = -1
@@ -488,14 +490,42 @@ func flushtyping(clearesc bool) {
 	if t != &cmd {
 		modified = true
 	}
+	// retrieve typed text from rasp
 	rp := rload(&t.rasp, typestart, typeend)
+	// if the last character typed is at the end of the current rasp and
+	// we're at a newline,
 	if t == &cmd && typeend == t.rasp.nrunes && rp[len(rp)-1] == '\n' {
-		setlock()
-		outcmd()
+		setlock() // sets hostlock
+		outcmd()  // sends `work` to host
 	}
-	outTslS(Ttype, t.tag, typestart, rp)
+	outTslS(Ttype, t.tag, typestart, rp) // send typed text to host
 	typestart = -1
 	typeend = -1
+}
+
+func kout(l *Flayer, t *Text, a int, atnl bool, in []rune) {
+	if len(in) <= 0 {
+		return
+	}
+	if typestart < 0 {
+		typestart = a
+	}
+	if typeesc < 0 {
+		typeesc = a
+	}
+	// grows rasp and inserts the data between a:len(kinput) into the
+	// rasp (retrieved from the host)
+	hgrow(t.tag, a, len(in), 0)
+	t.lock++                // pretend we Trequest'ed for hdatarune
+	hdatarune(t.tag, a, in) // insert a:len(kinput) into rasp
+	a += len(in)
+	l.p0 = a
+	l.p1 = a
+	typeend = a
+	if atnl || typeend-typestart > 100 {
+		flushtyping(false)
+	}
+	onethird(l, a) // make sure the text is visible
 }
 
 const (
@@ -539,13 +569,21 @@ func nontypingkey(c rune) bool {
 	return false
 }
 
+var indentq []rune
 var kinput = make([]rune, 0, 100)
 
 func ktype(l *Flayer, res Resource) {
+	var c rune
 	t := l.text
 	scrollkey := false
+	indenting := false
+	unindenting := false
+
 	if res == RKeyboard {
-		scrollkey = nontypingkey(qpeekc()) /* ICK */
+		c = qpeekc() /* ICK */
+		scrollkey = nontypingkey(c)
+		indenting = c == '\t'
+		unindenting = c == 0x19
 	}
 
 	if hostlock != 0 || t.lock != 0 {
@@ -553,14 +591,48 @@ func ktype(l *Flayer, res Resource) {
 		return
 	}
 	a := l.p0
+	kinput = kinput[:0]
+	backspacing := 0
+
 	if a != l.p1 && !scrollkey {
+		// When text is selected and the \t key is pressed, this
+		// block executes. ktype will run again immediately after
+		// we return to handle the '\t' key, where indentq is flushed
+		if indenting || unindenting {
+			indentq = indentq[:0]
+			txt := rload(&t.rasp, l.p0, l.p1)
+			if len(txt) < l.p1-l.p0 {
+				panic("indent")
+			}
+			tab := ltab(l)
+			if indenting {
+				indentq = append(indentq, tab...)
+			}
+			for i := 0; i < len(txt); i++ {
+				ch := txt[i]
+				if ch == '\n' && i+1 != len(txt) && txt[i+1] != 0 {
+					indentq = append(indentq, ch)
+					if indenting {
+						indentq = append(indentq, tab...)
+					}
+				} else {
+					if cont := stab(txt, i, tab); cont > 0 && unindenting {
+						if cont == 1 {
+							continue
+						} else {
+							i += cont - 1
+							continue
+						}
+					}
+					indentq = append(indentq, ch)
+				}
+			}
+		}
 		flushtyping(true)
 		cut(t, t.front, true, true)
 		return /* it may now be locked */
 	}
-	backspacing := 0
-	kinput = kinput[:0]
-	var c rune
+
 	for {
 		c = kbdchar()
 		if c <= 0 {
@@ -576,10 +648,14 @@ func ktype(l *Flayer, res Resource) {
 				break
 			}
 		}
-		if l.tabexpand && c == '\t' {
-			for i := 0; i < t.tabwidth; i++ {
-				kinput = append(kinput, ' ')
+		if c == '\t' || c == 0x19 {
+			if len(indentq) > 0 {
+				kinput = make([]rune, len(indentq))
+				copy(kinput, indentq)
+				indentq = indentq[:0]
+				continue
 			}
+			kinput = append(kinput, ltab(l)...)
 		} else {
 			kinput = append(kinput, c)
 		}
@@ -601,25 +677,7 @@ func ktype(l *Flayer, res Resource) {
 			break
 		}
 	}
-	if len(kinput) > 0 {
-		if typestart < 0 {
-			typestart = a
-		}
-		if typeesc < 0 {
-			typeesc = a
-		}
-		hgrow(t.tag, a, len(kinput), 0)
-		t.lock++ /* pretend we Trequest'ed for hdatarune*/
-		hdatarune(t.tag, a, kinput)
-		a += len(kinput)
-		l.p0 = a
-		l.p1 = a
-		typeend = a
-		if c == '\n' || typeend-typestart > 100 {
-			flushtyping(false)
-		}
-		onethird(l, a)
-	}
+	kout(l, t, a, c == '\n', kinput)
 	if c == SCROLLKEY || c == PAGEDOWN {
 		flushtyping(false)
 		center(l, l.origin+l.f.NumChars+1)
@@ -766,6 +824,40 @@ func ktype(l *Flayer, res Resource) {
 			break
 		}
 	}
+}
+
+func stab(text []rune, i int, tab []rune) int {
+	txtlen := len(text)
+	tablen := len(tab)
+	// i is out of bounds
+	if (tablen == 1 && i > txtlen) || (tablen > 1 && i+(tablen-1) > txtlen) {
+		return -1
+	}
+	// not at the start of the line
+	if i > 0 && text[i-1] != '\n' {
+		return -1
+	}
+	found := 0
+	for j := i; j < i+tablen; j++ {
+		if text[j] == '\t' || text[j] == ' ' {
+			found++
+		}
+	}
+	if found < len(tab) {
+		return -1
+	}
+	return found
+}
+
+func ltab(l *Flayer) []rune {
+	tab := []rune{'\t'}
+	if l.tabexpand {
+		tab = []rune{}
+		for i := 0; i < l.text.tabwidth; i++ {
+			tab = append(tab, ' ')
+		}
+	}
+	return tab
 }
 
 func incr(v *int) int {
