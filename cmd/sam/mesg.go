@@ -57,7 +57,7 @@ var hname = [26]string{
 	mesg.Hplumb:      "Hplumb",
 }
 
-var tname = [24]string{
+var tname = [25]string{
 	mesg.Tversion:      "mesg.Tversion",
 	mesg.Tstartcmdfile: "Tstartcmdfile",
 	mesg.Tcheck:        "mesg.Tcheck",
@@ -82,6 +82,7 @@ var tname = [24]string{
 	mesg.Texit:         "Texit",
 	mesg.Tplumb:        "Tplumb",
 	mesg.Ttclick:       "Ttclick",
+	mesg.Tundo:         "Tundo",
 }
 
 /*
@@ -379,6 +380,10 @@ func inmesg(type_ mesg.Tmesg) bool {
 		p0 = inlong()
 		p1 = inlong()
 		snarf(whichfile(i), p0, p1, &snarfbuf, 0)
+
+	case mesg.Tundo:
+		f = whichfile(inshort())
+		u_cmd(f, &Cmd{num: 1})
 
 	case mesg.Tstartnewfile:
 		v = invlong()
