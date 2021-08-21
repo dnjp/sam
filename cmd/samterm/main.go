@@ -539,15 +539,19 @@ const (
 	LINEEND       = '\x05'
 	LINESTART     = '\x01'
 	PAGEDOWN      = draw.KeyPageDown
-	PAGEUP        = draw.KeyPageUp
-	RIGHTARROW    = draw.KeyRight
-	SCROLLKEY     = draw.KeyDown
-	CUT           = draw.KeyCmd + 'x'
-	COPY          = draw.KeyCmd + 'c'
-	PASTE         = draw.KeyCmd + 'v'
-	UNDO          = draw.KeyCmd + 'z'
-	BACK          = 0x02 // ctrl+b
-	LAST          = 0x07 // ctrl+g
+	PAGEUP     = draw.KeyPageUp
+	RIGHTARROW = draw.KeyRight
+	SCROLLKEY  = draw.KeyDown
+	BACKC      = 0x02 // ctrl+b
+	FWDC       = 0x06 // ctrl+f
+	DOWNC      = 0x0E // ctrl+n
+	UPC        = 0x10 // ctrl+p
+	CUT        = draw.KeyCmd + 'x'
+	COPY       = draw.KeyCmd + 'c'
+	PASTE      = draw.KeyCmd + 'v'
+	UNDO       = draw.KeyCmd + 'z'
+	BACK       = 0x14 // ctrl+t
+	LAST       = 0x07 // ctrl+g
 )
 
 func nontypingkey(c rune) bool {
@@ -562,6 +566,10 @@ func nontypingkey(c rune) bool {
 		PAGEUP,
 		RIGHTARROW,
 		SCROLLKEY,
+		BACKC,
+		FWDC,
+		DOWNC,
+		UPC,
 		CUT,
 		COPY,
 		PASTE,
@@ -678,7 +686,7 @@ func ktype(l *Flayer, res Resource) {
 			a0 = 0
 		}
 		center(l, a0)
-	} else if c == RIGHTARROW {
+	} else if c == RIGHTARROW || c == FWDC {
 		flushtyping(false)
 		a0 := l.p0
 		if a0 < t.rasp.nrunes {
@@ -686,7 +694,7 @@ func ktype(l *Flayer, res Resource) {
 		}
 		flsetselect(l, a0, a0)
 		center(l, a0)
-	} else if c == LEFTARROW {
+	} else if c == LEFTARROW || c == BACKC {
 		flushtyping(false)
 		a0 := l.p0
 		if a0 > 0 {
@@ -694,6 +702,59 @@ func ktype(l *Flayer, res Resource) {
 		}
 		flsetselect(l, a0, a0)
 		center(l, a0)
+	} else if c == UPC {
+		a0 := l.p0
+		flsetselect(l, a0, a0)
+		flushtyping(true)
+		if a0 > 0 {
+			n0, n1, count := 0, 0, 0
+			for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
+				a0--
+				count++
+			}
+			if a0 > 0 {
+				n1 = a0
+				a0--
+				for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
+					a0--
+				}
+				n0 = a0
+				if n0+count >= n1 {
+					a0 = n1 - 1
+				} else {
+					a0 = n0 + count
+				}
+				flsetselect(l, a0, a0)
+				center(l, a0)
+			}
+		}
+	} else if c == DOWNC {
+		a0 := l.p0
+		flsetselect(l, a0, a0)
+		flushtyping(true)
+		if a0 < t.rasp.nrunes {
+			count := 0
+			p0 := a0
+			for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
+				a0--
+				count++
+			}
+			a0 = p0
+			for a0 < t.rasp.nrunes && raspc(&t.rasp, a0) != '\n' {
+				a0++
+			}
+			if a0 < t.rasp.nrunes {
+				a0++
+				for a0 < t.rasp.nrunes && count > 0 && raspc(&t.rasp, a0) != '\n' {
+					a0++
+					count--
+				}
+				if a0 != p0 {
+					flsetselect(l, a0, a0)
+					center(l, a0)
+				}
+			}
+		}
 	} else if c == HOMEKEY {
 		flushtyping(false)
 		center(l, 0)
