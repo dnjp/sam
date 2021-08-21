@@ -8,6 +8,7 @@ import (
 
 	"github.com/dnjp/9fans/draw"
 	"github.com/dnjp/sam/kb"
+	"github.com/dnjp/sam/mesg"
 )
 
 var (
@@ -79,8 +80,8 @@ func main() {
 	cmd.nwin = 1
 	which = &cmd.l[0]
 	cmd.tag = Untagged
-	outTs(Tversion, VERSION)
-	startnewfile(Tstartcmdfile, &cmd)
+	outTs(mesg.Tversion, mesg.VERSION)
+	startnewfile(mesg.Tstartcmdfile, &cmd)
 
 	got := 0
 	if protodebug {
@@ -141,10 +142,10 @@ func main() {
 						nclick := flselect(which)
 						if nclick > 0 {
 							if nclick > 1 {
-								outTsl(Ttclick, t.tag, which.p0)
+								outTsl(mesg.Ttclick, t.tag, which.p0)
 								t.lock++
 							} else {
-								outTsl(Tdclick, t.tag, which.p0)
+								outTsl(mesg.Tdclick, t.tag, which.p0)
 								t.lock++
 							}
 						} else if t != &cmd {
@@ -322,7 +323,7 @@ func snarf(t *Text, w int) {
 	l := &t.l[w]
 	if l.p1 > l.p0 {
 		snarflen = l.p1 - l.p0
-		outTsll(Tsnarf, t.tag, l.p0, l.p1)
+		outTsll(mesg.Tsnarf, t.tag, l.p0, l.p1)
 	}
 }
 
@@ -339,7 +340,7 @@ func cut(t *Text, w int, save bool, check bool) {
 	if save {
 		snarf(t, w)
 	}
-	outTsll(Tcut, t.tag, p0, p1)
+	outTsll(mesg.Tcut, t.tag, p0, p1)
 	flsetselect(l, p0, p0)
 	t.lock++
 	hcut(t.tag, p0, p1-p0)
@@ -352,7 +353,7 @@ func paste(t *Text, w int) {
 	if snarflen != 0 {
 		cut(t, w, false, false)
 		t.lock++
-		outTsl(Tpaste, t.tag, t.l[w].p0)
+		outTsl(mesg.Tpaste, t.tag, t.l[w].p0)
 	}
 }
 
@@ -365,9 +366,9 @@ func scrorigin(l *Flayer, but int, p0 int) {
 
 	switch but {
 	case 1:
-		outTsll(Torigin, t.tag, l.origin, p0)
+		outTsll(mesg.Torigin, t.tag, l.origin, p0)
 	case 2:
-		outTsll(Torigin, t.tag, p0, 1)
+		outTsll(mesg.Torigin, t.tag, p0, 1)
 	case 3:
 		horigin(t.tag, p0)
 	}
@@ -446,7 +447,7 @@ func center(l *Flayer, a int) bool {
 		if a > t.rasp.nrunes {
 			a = t.rasp.nrunes
 		}
-		outTsll(Torigin, t.tag, a, 2)
+		outTsll(mesg.Torigin, t.tag, a, 2)
 		return true
 	}
 	return false
@@ -463,7 +464,7 @@ func thirds(l *Flayer, a int, n int) bool {
 		if lines < 2 {
 			lines = 2
 		}
-		outTsll(Torigin, t.tag, a, lines)
+		outTsll(mesg.Torigin, t.tag, a, lines)
 		return true
 	}
 	return false
@@ -499,7 +500,7 @@ func flushtyping(clearesc bool) {
 		setlock() // sets hostlock
 		outcmd()  // sends `work` to host
 	}
-	outTslS(Ttype, t.tag, typestart, rp) // send typed text to host
+	outTslS(mesg.Ttype, t.tag, typestart, rp) // send typed text to host
 	typestart = -1
 	typeend = -1
 }
@@ -820,7 +821,7 @@ func incr(v *int) int {
 
 func outcmd() {
 	if work != nil {
-		outTsll(Tworkfile, work.text.tag, work.p0, work.p1)
+		outTsll(mesg.Tworkfile, work.text.tag, work.p0, work.p1)
 	}
 }
 

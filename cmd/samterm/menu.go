@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/dnjp/9fans/draw"
+	"github.com/dnjp/sam/mesg"
 )
 
 var name [][]uint8 /* first byte is ' ' or '\'': modified state */
@@ -95,24 +96,24 @@ func menu2hit() {
 
 	case Plumb:
 		if hversion > 0 {
-			outTsll(Tplumb, t.tag, which.p0, which.p1)
+			outTsll(mesg.Tplumb, t.tag, which.p0, which.p1)
 		}
 
 	case Exch:
 		snarf(t, w)
-		outT0(Tstartsnarf)
+		outT0(mesg.Tstartsnarf)
 		setlock()
 
 	case Look:
-		outTsll(Tlook, t.tag, which.p0, which.p1)
+		outTsll(mesg.Tlook, t.tag, which.p0, which.p1)
 		setlock()
 
 	case Search:
 		outcmd()
 		if t == &cmd {
-			outTsll(Tsend, 0, which.p0, which.p1) /*ignored*/
+			outTsll(mesg.Tsend, 0, which.p0, which.p1) /*ignored*/
 		} else {
-			outT0(Tsearch)
+			outT0(mesg.Tsearch)
 		}
 		setlock()
 	}
@@ -160,7 +161,7 @@ func menu3hit() {
 					if t.nwin > 1 {
 						closeup(l)
 					} else if t != &cmd {
-						outTs(Tclose, t.tag)
+						outTs(mesg.Tclose, t.tag)
 						setlock()
 					}
 				}
@@ -174,7 +175,7 @@ func menu3hit() {
 			display.SwitchCursor(&bullseye)
 			buttons(Down)
 			if mousep.Buttons&4 != 0 && func() bool { l = flwhich(mousep.Point); return l != nil }() {
-				outTs(Twrite, l.text.tag)
+				outTs(mesg.Twrite, l.text.tag)
 				setlock()
 			} else {
 				display.SwitchCursor(cursor)
@@ -223,7 +224,7 @@ func sweeptext(isNew bool, tag int) *Text {
 	t.nwin = 1
 	rinit(&t.rasp)
 	if isNew {
-		startnewfile(Tstartnewfile, t)
+		startnewfile(mesg.Tstartnewfile, t)
 	} else {
 		rinit(&t.rasp)
 		t.tag = tag

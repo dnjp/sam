@@ -13,6 +13,7 @@ import (
 	"github.com/dnjp/9fans/plan9"
 	"github.com/dnjp/9fans/plan9/client"
 	"github.com/dnjp/9fans/plumb"
+	"github.com/dnjp/sam/mesg"
 )
 
 var exname string
@@ -69,7 +70,7 @@ func snarfswap(fromsam []byte) (fromterm []byte) {
 	return fromterm[:n]
 }
 
-func dumperrmsg(count int, typ Hmesg, count0 int, c int) {
+func dumperrmsg(count int, typ mesg.Hmesg, count0 int, c int) {
 	fmt.Fprintf(os.Stderr, "samterm: host mesg: count %d %#x %#x %#x %s...ignored\n", count, typ, count0, c, rcvstring())
 }
 

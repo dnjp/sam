@@ -8,12 +8,13 @@ import (
 	"unicode/utf8"
 
 	"github.com/dnjp/9fans/plumb"
+	"github.com/dnjp/sam/mesg"
 )
 
 const HSIZE = 3 /* Type + short count */
-var h Header
-var indata = make([]byte, 0, DATASIZE)
-var outdata [DATASIZE]byte
+var h mesg.Header
+var indata = make([]byte, 0, mesg.DATASIZE)
+var outdata [mesg.DATASIZE]byte
 var outcount int
 var hversion int
 var hostfd [2]*os.File
@@ -33,29 +34,29 @@ func rcv() {
 		}
 		switch rcv_state {
 		case 0:
-			h.typ = Hmesg(c)
+			h.Typ = mesg.Hmesg(c).Wire()
 			rcv_state++
 
 		case 1:
-			h.count0 = byte(c)
+			h.Count0 = byte(c)
 			rcv_state++
 
 		case 2:
-			h.count1 = byte(c)
-			rcv_count = int(h.count0) | int(h.count1)<<8
-			if rcv_count > DATASIZE {
+			h.Count1 = byte(c)
+			rcv_count = int(h.Count0) | int(h.Count1)<<8
+			if rcv_count > mesg.DATASIZE {
 				rcv_errs++
 				if rcv_errs < 5 {
-					dumperrmsg(rcv_count, h.typ, int(h.count0), c)
+					dumperrmsg(rcv_count, mesg.Hmesg(h.Typ), int(h.Count0), c)
 					rcv_state = 0
 					continue
 				}
-				fmt.Fprintf(os.Stderr, "type %d count %d\n", h.typ, rcv_count)
-				panic("count>DATASIZE")
+				fmt.Fprintf(os.Stderr, "type %d count %d\n", h.Typ, rcv_count)
+				panic("count>mesg.DATASIZE")
 			}
 			indata = indata[:0]
 			if rcv_count == 0 {
-				inmesg(h.typ, 0)
+				inmesg(mesg.Hmesg(h.Typ), 0)
 				rcv_count = 0
 				rcv_state = 0
 				continue
@@ -65,7 +66,7 @@ func rcv() {
 		case 3:
 			indata = append(indata, byte(c))
 			if len(indata) == rcv_count {
-				inmesg(h.typ, rcv_count)
+				inmesg(mesg.Hmesg(h.Typ), rcv_count)
 				rcv_count = 0
 				rcv_state = 0
 				continue
@@ -95,7 +96,7 @@ func whichtext(tg int) *Text {
 	// return nil
 }
 
-func inmesg(typ Hmesg, count int) {
+func inmesg(typ mesg.Hmesg, count int) {
 	m := inshort(0)
 	l := inlong(2)
 	switch typ {
@@ -107,10 +108,10 @@ func inmesg(typ Hmesg, count int) {
 		panic("rcv unknown")
 		// fallthrough
 
-	case Hversion:
+	case mesg.Hversion:
 		hversion = m
 
-	case Htabwidth:
+	case mesg.Htabwidth:
 		l := invlong(2)
 		i := whichmenu(m)
 		t := whichtext(m)
@@ -125,7 +126,7 @@ func inmesg(typ Hmesg, count int) {
 		}
 		break
 
-	case Htabexpand:
+	case mesg.Htabexpand:
 		i := whichmenu(m)
 		t := whichtext(m)
 		if i < 0 || t == nil {
@@ -142,7 +143,7 @@ func inmesg(typ Hmesg, count int) {
 		}
 		break
 
-	case Hbindname:
+	case mesg.Hbindname:
 		l := invlong(2) /* for 64-bit pointers */
 		i := whichmenu(m)
 		if i < 0 {
@@ -161,7 +162,7 @@ func inmesg(typ Hmesg, count int) {
 		text[i] = t
 		text[i].tag = m
 
-	case Hcurrent:
+	case mesg.Hcurrent:
 		if whichmenu(m) < 0 {
 			break
 		}
@@ -185,7 +186,7 @@ func inmesg(typ Hmesg, count int) {
 			current(lp)
 		}
 
-	case Hmovname:
+	case mesg.Hmovname:
 		m := whichmenu(m)
 		if m < 0 {
 			break
@@ -211,25 +212,25 @@ func inmesg(typ Hmesg, count int) {
 		}
 		menuins(m, indata[2:], t, i, int(l))
 
-	case Hgrow:
+	case mesg.Hgrow:
 		if whichmenu(m) >= 0 {
 			hgrow(m, l, inlong(6), 1)
 		}
 
-	case Hnewname:
+	case mesg.Hnewname:
 		menuins(0, nil, nil, ' ', m)
 
-	case Hcheck0:
+	case mesg.Hcheck0:
 		i := whichmenu(m)
 		if i >= 0 {
 			t := text[i]
 			if t != nil {
 				t.lock++
 			}
-			outTs(Tcheck, m)
+			outTs(mesg.Tcheck, m)
 		}
 
-	case Hcheck:
+	case mesg.Hcheck:
 		i := whichmenu(m)
 		if i >= 0 {
 			t := text[i]
@@ -239,21 +240,21 @@ func inmesg(typ Hmesg, count int) {
 			hcheck(m)
 		}
 
-	case Hunlock:
+	case mesg.Hunlock:
 		clrlock()
 
-	case Hdata:
+	case mesg.Hdata:
 		if whichmenu(m) >= 0 {
 			l += hdata(m, l, indata[6:])
 		}
 		goto Checkscroll
 
-	case Horigin:
+	case mesg.Horigin:
 		if whichmenu(m) >= 0 {
 			horigin(m, l)
 		}
 
-	case Hunlockfile:
+	case mesg.Hunlockfile:
 		if whichmenu(m) >= 0 {
 			t := whichtext(m)
 			if t.lock != 0 {
@@ -263,12 +264,12 @@ func inmesg(typ Hmesg, count int) {
 			}
 		}
 
-	case Hsetdot:
+	case mesg.Hsetdot:
 		if whichmenu(m) >= 0 {
 			hsetdot(m, l, inlong(6))
 		}
 
-	case Hgrowdata:
+	case mesg.Hgrowdata:
 		if whichmenu(m) < 0 {
 			break
 		}
@@ -277,35 +278,35 @@ func inmesg(typ Hmesg, count int) {
 		l += hdata(m, l, indata[10:])
 		goto Checkscroll
 
-	case Hmoveto:
+	case mesg.Hmoveto:
 		if whichmenu(m) >= 0 {
 			hmoveto(m, l)
 		}
 
-	case Hclean:
+	case mesg.Hclean:
 		m := whichmenu(m)
 		if m >= 0 {
 			name[m][0] = ' '
 		}
 
-	case Hdirty:
+	case mesg.Hdirty:
 		m := whichmenu(m)
 		if m >= 0 {
 			name[m][0] = '\''
 		}
 
-	case Hdelname:
+	case mesg.Hdelname:
 		m := whichmenu(m)
 		if m >= 0 {
 			menudel(m)
 		}
 
-	case Hcut:
+	case mesg.Hcut:
 		if whichmenu(m) >= 0 {
 			hcut(m, l, inlong(6))
 		}
 
-	case Hclose:
+	case mesg.Hclose:
 		if whichmenu(m) < 0 {
 			break
 		}
@@ -322,24 +323,24 @@ func inmesg(typ Hmesg, count int) {
 			}
 		}
 
-	case Hsetpat:
+	case mesg.Hsetpat:
 		setpat(indata)
 
-	case Hsetsnarf:
+	case mesg.Hsetsnarf:
 		hsetsnarf(m)
 
-	case Hsnarflen:
+	case mesg.Hsnarflen:
 		snarflen = inlong(0)
 
-	case Hack:
-		outT0(Tack)
+	case mesg.Hack:
+		outT0(mesg.Tack)
 
-	case Hexit:
+	case mesg.Hexit:
 		exiting = 1
-		outT0(Texit)
+		outT0(mesg.Texit)
 		os.Exit(0)
 
-	case Hplumb:
+	case mesg.Hplumb:
 		hplumb(m)
 	}
 	return
@@ -379,11 +380,11 @@ func clrlock() {
 }
 
 func startfile(t *Text) {
-	outTsv(Tstartfile, t.tag, t.id) /* for 64-bit pointers */
+	outTsv(mesg.Tstartfile, t.tag, t.id) /* for 64-bit pointers */
 	setlock()
 }
 
-func startnewfile(typ Tmesg, t *Text) {
+func startnewfile(typ mesg.Tmesg, t *Text) {
 	t.tag = Untagged
 	t.tabwidth = maxtab
 	outTv(typ, t.id) /* for 64-bit pointers */
@@ -401,31 +402,31 @@ func invlong(n int) int64 {
 	return int64(binary.LittleEndian.Uint64(indata[n : n+8]))
 }
 
-func outT0(typ Tmesg) {
+func outT0(typ mesg.Tmesg) {
 	outstart(typ)
 	outsend()
 }
 
-func outTl(typ Tmesg, l int) {
+func outTl(typ mesg.Tmesg, l int) {
 	outstart(typ)
 	outlong(l)
 	outsend()
 }
 
-func outTs(typ Tmesg, s int) {
+func outTs(typ mesg.Tmesg, s int) {
 	outstart(typ)
 	outshort(s)
 	outsend()
 }
 
-func outTss(typ Tmesg, s1 int, s2 int) {
+func outTss(typ mesg.Tmesg, s1 int, s2 int) {
 	outstart(typ)
 	outshort(s1)
 	outshort(s2)
 	outsend()
 }
 
-func outTsll(typ Tmesg, s1 int, l1 int, l2 int) {
+func outTsll(typ mesg.Tmesg, s1 int, l1 int, l2 int) {
 	outstart(typ)
 	outshort(s1)
 	outlong(l1)
@@ -433,27 +434,27 @@ func outTsll(typ Tmesg, s1 int, l1 int, l2 int) {
 	outsend()
 }
 
-func outTsl(typ Tmesg, s1 int, l1 int) {
+func outTsl(typ mesg.Tmesg, s1 int, l1 int) {
 	outstart(typ)
 	outshort(s1)
 	outlong(l1)
 	outsend()
 }
 
-func outTsv(typ Tmesg, s1 int, v1 int64) {
+func outTsv(typ mesg.Tmesg, s1 int, v1 int64) {
 	outstart(typ)
 	outshort(s1)
 	outvlong(v1)
 	outsend()
 }
 
-func outTv(typ Tmesg, v1 int64) {
+func outTv(typ mesg.Tmesg, v1 int64) {
 	outstart(typ)
 	outvlong(v1)
 	outsend()
 }
 
-func outTslS(typ Tmesg, s1 int, l1 int, s []rune) {
+func outTslS(typ mesg.Tmesg, s1 int, l1 int, s []rune) {
 	outstart(typ)
 	outshort(s1)
 	outlong(l1)
@@ -461,7 +462,7 @@ func outTslS(typ Tmesg, s1 int, l1 int, s []rune) {
 	outsend()
 }
 
-func outTsls(typ Tmesg, s1 int, l1 int, s2 int) {
+func outTsls(typ mesg.Tmesg, s1 int, l1 int, s2 int) {
 	outstart(typ)
 	outshort(s1)
 	outlong(l1)
@@ -469,7 +470,7 @@ func outTsls(typ Tmesg, s1 int, l1 int, s2 int) {
 	outsend()
 }
 
-func outstart(typ Tmesg) {
+func outstart(typ mesg.Tmesg) {
 	outdata[0] = byte(typ)
 	outcount = 0
 }
@@ -497,7 +498,7 @@ func outvlong(v int64) {
 
 // outsend sends the `outdata` to the hosts file descriptor
 func outsend() {
-	if outcount > DATASIZE-HSIZE {
+	if outcount > mesg.DATASIZE-HSIZE {
 		panic("outcount>sizeof outdata")
 	}
 	outdata[1] = uint8(outcount)
@@ -544,7 +545,7 @@ func hmoveto(m int, p0 int) {
 	l := &t.l[t.front]
 
 	if p0 < l.origin || p0-l.origin > l.f.NumChars*9/10 {
-		outTsll(Torigin, m, p0, 2)
+		outTsll(mesg.Torigin, m, p0, 2)
 	}
 }
 
@@ -578,8 +579,8 @@ func hcheck(m int) {
 			if n == 0 {
 				goto Checksel
 			}
-			if n > TBLOCKSIZE {
-				n = TBLOCKSIZE
+			if n > mesg.TBLOCKSIZE {
+				n = mesg.TBLOCKSIZE
 			}
 			n = rcontig(&t.rasp, a, a+n, true)
 			if n > 0 {
@@ -593,14 +594,14 @@ func hcheck(m int) {
 			}
 		}
 		if !reqd {
-			n = rcontig(&t.rasp, a, a+TBLOCKSIZE, false)
+			n = rcontig(&t.rasp, a, a+mesg.TBLOCKSIZE, false)
 			if n <= 0 {
 				panic("hcheck request==0")
 			}
-			outTsls(Trequest, m, a, int(n))
-			outTs(Tcheck, m)
-			t.lock++ /* for the Trequest */
-			t.lock++ /* for the Tcheck */
+			outTsls(mesg.Trequest, m, a, int(n))
+			outTs(mesg.Tcheck, m)
+			t.lock++ /* for the mesg.Trequest */
+			t.lock++ /* for the mesg.Tcheck */
 			reqd = true
 		}
 	Checksel:
@@ -620,18 +621,18 @@ func hsetsnarf(nc int) {
 	}
 	nsnarf := snarfswap(osnarf)
 	if nsnarf != nil {
-		if len(nsnarf) > SNARFSIZE {
+		if len(nsnarf) > mesg.SNARFSIZE {
 			nsnarf = []byte("<snarf too long>")
 		}
 		snarflen = len(nsnarf)
-		outTs(Tsetsnarf, len(nsnarf))
+		outTs(mesg.Tsetsnarf, len(nsnarf))
 		if len(nsnarf) > 0 {
 			if n, err := hostfd[1].Write(nsnarf); n != len(nsnarf) {
 				panic("snarf write error: " + err.Error())
 			}
 		}
 	} else {
-		outTs(Tsetsnarf, 0)
+		outTs(mesg.Tsetsnarf, 0)
 	}
 	display.SwitchCursor(cursor)
 }
@@ -678,10 +679,10 @@ func hgrow(m int, a int, new int, req int) {
 		if req == 0 || a < o || (b > 0 && b > l.f.NumChars) || (l.f.NumChars == 0 && a-o > 0) {
 			continue
 		}
-		if new > TBLOCKSIZE {
-			new = TBLOCKSIZE
+		if new > mesg.TBLOCKSIZE {
+			new = mesg.TBLOCKSIZE
 		}
-		outTsls(Trequest, m, a, new)
+		outTsls(mesg.Trequest, m, a, new)
 		t.lock++
 		req = 0
 	}

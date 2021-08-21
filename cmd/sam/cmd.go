@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/dnjp/sam/mesg"
 )
 
 var linex = "\n"
@@ -94,7 +96,7 @@ Again:
 				tellpat()
 			}
 			for termlocked > 0 {
-				outT0(Hunlock)
+				outT0(mesg.Hunlock)
 				termlocked--
 			}
 			if !rcv() {
@@ -269,7 +271,7 @@ func cmdloop() {
 		cmdupdate()
 		update()
 		if downloaded && curfile != nil && (ocurfile != curfile || (!loaded && !curfile.unread)) {
-			outTs(Hcurrent, curfile.tag)
+			outTs(mesg.Hcurrent, curfile.tag)
 		}
 		/* don't allow type ahead on files that aren't bound */
 		if downloaded && curfile != nil && curfile.rasp == nil {

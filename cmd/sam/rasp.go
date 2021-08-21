@@ -1,5 +1,7 @@
 package main
 
+import "github.com/dnjp/sam/mesg"
+
 /*
  * GROWDATASIZE must be big enough that all errors go out as Hgrowdata's,
  * so they will be scrolled into visibility in the ~~sam~~ window (yuck!).
@@ -65,12 +67,12 @@ func raspdone(f *File, toterm bool) {
 		return
 	}
 	if grown != 0 {
-		outTsll(Hgrow, f.tag, growpos, grown)
+		outTsll(mesg.Hgrow, f.tag, growpos, grown)
 	} else if shrunk != 0 {
-		outTsll(Hcut, f.tag, shrinkpos, shrunk)
+		outTsll(mesg.Hcut, f.tag, shrinkpos, shrunk)
 	}
 	if toterm {
-		outTs(Hcheck0, f.tag)
+		outTs(mesg.Hcheck0, f.tag)
 	}
 	outflush()
 	outbuffered = false
@@ -82,10 +84,10 @@ func raspdone(f *File, toterm bool) {
 
 func raspflush(f *File) {
 	if grown != 0 {
-		outTsll(Hgrow, f.tag, growpos, grown)
+		outTsll(mesg.Hgrow, f.tag, growpos, grown)
 		grown = 0
 	} else if shrunk != 0 {
-		outTsll(Hcut, f.tag, shrinkpos, shrunk)
+		outTsll(mesg.Hcut, f.tag, shrinkpos, shrunk)
 		shrunk = 0
 	}
 	outflush()
@@ -119,10 +121,10 @@ func raspdelete(f *File, p1 int, p2 int, toterm bool) {
 	}
 	if toterm {
 		if grown != 0 {
-			outTsll(Hgrow, f.tag, growpos, grown)
+			outTsll(mesg.Hgrow, f.tag, growpos, grown)
 			grown = 0
 		} else if shrunk != 0 && shrinkpos != p1 && shrinkpos != p2 {
-			outTsll(Hcut, f.tag, shrinkpos, shrunk)
+			outTsll(mesg.Hcut, f.tag, shrinkpos, shrunk)
 			shrunk = 0
 		}
 		if shrunk == 0 || shrinkpos == p2 {
@@ -156,13 +158,13 @@ func raspinsert(f *File, p1 int, buf []rune, toterm bool) {
 	}
 	if toterm {
 		if shrunk != 0 {
-			outTsll(Hcut, f.tag, shrinkpos, shrunk)
+			outTsll(mesg.Hcut, f.tag, shrinkpos, shrunk)
 			shrunk = 0
 		}
 		if n > GROWDATASIZE || !rterm(f.rasp, p1) {
 			rgrow(f.rasp, p1, n)
 			if grown != 0 && growpos+grown != p1 && growpos != p1 {
-				outTsll(Hgrow, f.tag, growpos, grown)
+				outTsll(mesg.Hgrow, f.tag, growpos, grown)
 				grown = 0
 			}
 			if grown == 0 {
@@ -171,7 +173,7 @@ func raspinsert(f *File, p1 int, buf []rune, toterm bool) {
 			grown += n
 		} else {
 			if grown != 0 {
-				outTsll(Hgrow, f.tag, growpos, grown)
+				outTsll(mesg.Hgrow, f.tag, growpos, grown)
 				grown = 0
 			}
 			rgrow(f.rasp, p1, n)
@@ -179,7 +181,7 @@ func raspinsert(f *File, p1 int, buf []rune, toterm bool) {
 			if r.p1 != p1 || r.p2 != p1+n {
 				panic_("rdata in toterminal")
 			}
-			outTsllS(Hgrowdata, f.tag, p1, n, tmprstr(buf[:n]))
+			outTsllS(mesg.Hgrowdata, f.tag, p1, n, tmprstr(buf[:n]))
 		}
 	} else {
 		rgrow(f.rasp, p1, n)

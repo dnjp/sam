@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/dnjp/sam/mesg"
 )
 
 var Glooping int
@@ -172,7 +174,7 @@ func p_cmd(f *File, cp *Cmd) bool {
 func q_cmd(f *File, cp *Cmd) bool {
 	trytoquit()
 	if downloaded {
-		outT0(Hexit)
+		outT0(mesg.Hexit)
 		return true
 	}
 	return false
@@ -351,7 +353,7 @@ func tw_cmd(f *File, cp *Cmd) bool {
 	}
 	tabwidth = tw
 	if downloaded {
-		outTsv(Htabwidth, f.tag, int64(tabwidth))
+		outTsv(mesg.Htabwidth, f.tag, int64(tabwidth))
 		return true
 	}
 	return false
@@ -359,7 +361,7 @@ func tw_cmd(f *File, cp *Cmd) bool {
 
 func te_cmd(f *File, cp *Cmd) bool {
 	if downloaded {
-		outTs(Htabexpand, f.tag)
+		outTs(mesg.Htabexpand, f.tag)
 		return true
 	}
 	return false

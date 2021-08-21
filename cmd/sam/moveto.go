@@ -2,7 +2,11 @@
 
 package main
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/dnjp/sam/mesg"
+)
 
 func moveto(f *File, r Range) {
 	p1 := r.p1
@@ -12,7 +16,7 @@ func moveto(f *File, r Range) {
 	f.dot.r.p2 = p2
 	if f.rasp != nil {
 		telldot(f)
-		outTsl(Hmoveto, f.tag, f.dot.r.p1)
+		outTsl(mesg.Hmoveto, f.tag, f.dot.r.p1)
 	}
 }
 
@@ -23,12 +27,12 @@ func telldot(f *File) {
 	if f.dot.r.p1 == f.tdot.p1 && f.dot.r.p2 == f.tdot.p2 {
 		return
 	}
-	outTsll(Hsetdot, f.tag, f.dot.r.p1, f.dot.r.p2)
+	outTsll(mesg.Hsetdot, f.tag, f.dot.r.p1, f.dot.r.p2)
 	f.tdot = f.dot.r
 }
 
 func tellpat() {
-	outTS(Hsetpat, &lastpat)
+	outTS(mesg.Hsetpat, &lastpat)
 	patset = false
 }
 
@@ -61,7 +65,7 @@ func lookorigin(f *File, p0 Posn, ls Posn) {
 	} else {
 		p0 = oldp0
 	}
-	outTsl(Horigin, f.tag, p0)
+	outTsl(mesg.Horigin, f.tag, p0)
 }
 
 func isalnum(r rune) bool {
