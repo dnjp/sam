@@ -511,7 +511,6 @@ func outsend() {
 func hsetdot(m int, p0 int, p1 int) {
 	t := whichtext(m)
 	l := &t.l[t.front]
-
 	flushtyping(true)
 	flsetselect(l, p0, p1)
 }

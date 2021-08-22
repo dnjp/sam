@@ -113,29 +113,31 @@ type Buffer struct {
 }
 
 type File struct {
-	b        Buffer
-	delta    Buffer
-	epsilon  Buffer
-	name     String
-	info     os.FileInfo
-	unread   bool
-	seq      int
-	cleanseq int
-	mod      bool
-	rescuing int8
-	hiposn   Posn
-	dot      Address
-	ndot     Address
-	tdot     Range
-	mark     Range
-	rasp     *PosnList
-	tag      int
-	closeok  bool
-	deleted  bool
-	prevdot  Range
-	prevmark Range
-	prevseq  int
-	prevmod  bool
+	b         Buffer
+	delta     Buffer
+	epsilon   Buffer
+	name      String
+	info      os.FileInfo
+	unread    bool
+	seq       int
+	cleanseq  int
+	mod       bool
+	rescuing  int8
+	hiposn    Posn
+	dot       Address
+	ndot      Address
+	tdot      Range
+	mark      Range
+	rasp      *PosnList
+	tag       int
+	closeok   bool
+	deleted   bool
+	prevdot   Range
+	prevmark  Range
+	prevseq   int
+	prevmod   bool
+	tabexpand bool
+	tabwidth  int
 }
 
 /*File*		fileaddtext(File*, Text*); */

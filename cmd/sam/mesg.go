@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dnjp/9fans/plumb"
+	"github.com/dnjp/sam/kb"
 	"github.com/dnjp/sam/mesg"
 )
 
@@ -57,7 +58,7 @@ var hname = [26]string{
 	mesg.Hplumb:      "Hplumb",
 }
 
-var tname = [25]string{
+var tname = [27]string{
 	mesg.Tversion:      "mesg.Tversion",
 	mesg.Tstartcmdfile: "Tstartcmdfile",
 	mesg.Tcheck:        "mesg.Tcheck",
@@ -83,6 +84,8 @@ var tname = [25]string{
 	mesg.Tplumb:        "Tplumb",
 	mesg.Ttclick:       "Ttclick",
 	mesg.Tundo:         "Tundo",
+	mesg.Tindent:       "Tindent",
+	mesg.Tunindent:     "Tunindent",
 }
 
 /*
@@ -215,7 +218,7 @@ func inmesg(type_ mesg.Tmesg) bool {
 	var p Posn
 	var r Range
 	var str *String
-	debug("EV TYPE: %d", type_)
+	debug("EV TYPE: %d %s", type_, tname[type_])
 	switch type_ {
 	case -1:
 		panic_("rcv error")
@@ -384,6 +387,46 @@ func inmesg(type_ mesg.Tmesg) bool {
 	case mesg.Tundo:
 		f = whichfile(inshort())
 		u_cmd(f, &Cmd{num: 1})
+
+	case mesg.Tindent, mesg.Tunindent:
+		indenting := type_ == mesg.Tindent
+		f = whichfile(inshort())
+		p0 = inlong()
+		journaln(0, p0)
+		var count int
+		for l = 0; l < snarfbuf.nc; l += m {
+			m = snarfbuf.nc - l
+			if m > BLOCKSIZE {
+				m = BLOCKSIZE
+			}
+			bufread(&snarfbuf, l, genbuf[:m])
+			rp, err := kb.IndentSelection(
+				genbuf[:m],
+				p0,
+				p1,
+				func() int {
+					if f.tabwidth > 0 {
+						return f.tabwidth
+					}
+					return 8
+				}(),
+				f.tabexpand,
+				!indenting,
+			)
+			if err != nil {
+				panic(err)
+			}
+			count += len(rp)
+			loginsert(f, p0, tmprstr(rp).s)
+		}
+		if fileupdate(f, false, true) {
+			seq++
+		}
+		f.dot.r.p1 = p0
+		f.dot.r.p2 = p0 + count
+		f.tdot.p1 = -1 /* force telldot to tell (arguably a BUG) */
+		outTs(mesg.Hunlockfile, f.tag)
+		telldot(f)
 
 	case mesg.Tstartnewfile:
 		v = invlong()
