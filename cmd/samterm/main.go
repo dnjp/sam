@@ -554,6 +554,7 @@ const (
 	LAST          = 0x07 // ctrl+g
 	INDENT        = '\t'
 	UNINDENT      = 0x19 // shift+tab
+	COMMENT       = draw.KeyCmd + '/'
 )
 
 func nontypingkey(c rune) bool {
@@ -577,7 +578,8 @@ func nontypingkey(c rune) bool {
 		PASTE,
 		UNDO,
 		BACK,
-		LAST:
+		LAST,
+		COMMENT:
 		return true
 	}
 	return false
@@ -667,6 +669,11 @@ Out:
 		} else if c == INDENT {
 			kout(l, t, a, false, kb.Tab(l.text.tabwidth, l.tabexpand))
 		}
+	case COMMENT:
+		flushtyping(false)
+		cut(t, t.front, true, false)
+		t.lock++
+		outTsl(mesg.Tcomment, t.tag, l.p0)
 	case SCROLLKEY, PAGEDOWN:
 		flushtyping(false)
 		center(l, l.origin+l.f.NumChars+1)

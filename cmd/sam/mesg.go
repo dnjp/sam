@@ -58,7 +58,7 @@ var hname = [26]string{
 	mesg.Hplumb:      "Hplumb",
 }
 
-var tname = [27]string{
+var tname = [28]string{
 	mesg.Tversion:      "mesg.Tversion",
 	mesg.Tstartcmdfile: "Tstartcmdfile",
 	mesg.Tcheck:        "mesg.Tcheck",
@@ -86,6 +86,7 @@ var tname = [27]string{
 	mesg.Tundo:         "Tundo",
 	mesg.Tindent:       "Tindent",
 	mesg.Tunindent:     "Tunindent",
+	mesg.Tcomment:      "Tcomment",
 }
 
 /*
@@ -413,6 +414,33 @@ func inmesg(type_ mesg.Tmesg) bool {
 				f.tabexpand,
 				!indenting,
 			)
+			if err != nil {
+				panic(err)
+			}
+			count += len(rp)
+			loginsert(f, p0, tmprstr(rp).s)
+		}
+		if fileupdate(f, false, true) {
+			seq++
+		}
+		f.dot.r.p1 = p0
+		f.dot.r.p2 = p0 + count
+		f.tdot.p1 = -1 /* force telldot to tell (arguably a BUG) */
+		outTs(mesg.Hunlockfile, f.tag)
+		telldot(f)
+
+	case mesg.Tcomment:
+		f = whichfile(inshort())
+		p0 = inlong()
+		journaln(0, p0)
+		var count int
+		for l = 0; l < snarfbuf.nc; l += m {
+			m = snarfbuf.nc - l
+			if m > BLOCKSIZE {
+				m = BLOCKSIZE
+			}
+			bufread(&snarfbuf, l, genbuf[:m])
+			rp, err := kb.CommentSelection(genbuf[:m], Strtoc(&f.name))
 			if err != nil {
 				panic(err)
 			}
