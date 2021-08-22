@@ -539,19 +539,21 @@ const (
 	LINEEND       = '\x05'
 	LINESTART     = '\x01'
 	PAGEDOWN      = draw.KeyPageDown
-	PAGEUP     = draw.KeyPageUp
-	RIGHTARROW = draw.KeyRight
-	SCROLLKEY  = draw.KeyDown
-	BACKC      = 0x02 // ctrl+b
-	FWDC       = 0x06 // ctrl+f
-	DOWNC      = 0x0E // ctrl+n
-	UPC        = 0x10 // ctrl+p
-	CUT        = draw.KeyCmd + 'x'
-	COPY       = draw.KeyCmd + 'c'
-	PASTE      = draw.KeyCmd + 'v'
-	UNDO       = draw.KeyCmd + 'z'
-	BACK       = 0x14 // ctrl+t
-	LAST       = 0x07 // ctrl+g
+	PAGEUP        = draw.KeyPageUp
+	RIGHTARROW    = draw.KeyRight
+	SCROLLKEY     = draw.KeyDown
+	BACKC         = 0x02 // ctrl+b
+	FWDC          = 0x06 // ctrl+f
+	DOWNC         = 0x0E // ctrl+n
+	UPC           = 0x10 // ctrl+p
+	CUT           = draw.KeyCmd + 'x'
+	COPY          = draw.KeyCmd + 'c'
+	PASTE         = draw.KeyCmd + 'v'
+	UNDO          = draw.KeyCmd + 'z'
+	BACK          = 0x14 // ctrl+t
+	LAST          = 0x07 // ctrl+g
+	INDENT        = '\t'
+	UNINDENT      = 0x19 // shift+tab
 )
 
 func nontypingkey(c rune) bool {
@@ -588,14 +590,10 @@ func ktype(l *Flayer, res Resource) {
 	var c rune
 	t := l.text
 	scrollkey := false
-	indenting := false
-	unindenting := false
 
 	if res == RKeyboard {
 		c = qpeekc() /* ICK */
 		scrollkey = nontypingkey(c)
-		indenting = c == '\t'
-		unindenting = c == 0x19
 	}
 
 	if hostlock != 0 || t.lock != 0 {
@@ -607,24 +605,12 @@ func ktype(l *Flayer, res Resource) {
 	backspacing := 0
 
 	if a != l.p1 && !scrollkey {
-		// When text is selected and the \t key is pressed, this
-		// block executes. ktype will run again immediately after
-		// we return to handle the '\t' key, where indentq is flushed
-		if indenting || unindenting {
-			var err error
-			indentq = indentq[:0]
-			txt := rload(&t.rasp, l.p0, l.p1)
-			indentq, err = kb.IndentSelection(
-				txt,
-				l.p0,
-				l.p1,
-				l.text.tabwidth,
-				l.tabexpand,
-				unindenting,
-			)
-			if err != nil {
-				panic(err)
-			}
+		if c == INDENT || c == UNINDENT {
+			// without this, the initial tab event causes
+			// a continuous cycle because `got` is never
+			// reset. this is probably a bug.
+			got = 0
+			goto Out
 		}
 		flushtyping(true)
 		cut(t, t.front, true, true)
@@ -637,7 +623,7 @@ func ktype(l *Flayer, res Resource) {
 			break
 		}
 		if res == RKeyboard {
-			if nontypingkey(c) || c == ESC {
+			if nontypingkey(c) || c == ESC || c == INDENT || c == UNINDENT {
 				break
 			}
 			/* backspace, ctrl-u, ctrl-w, del */
@@ -646,17 +632,7 @@ func ktype(l *Flayer, res Resource) {
 				break
 			}
 		}
-		if c == '\t' || c == 0x19 {
-			if len(indentq) > 0 {
-				kinput = make([]rune, len(indentq))
-				copy(kinput, indentq)
-				indentq = indentq[:0]
-				continue
-			}
-			kinput = append(kinput, kb.Tab(l.text.tabwidth, l.tabexpand)...)
-		} else {
-			kinput = append(kinput, c)
-		}
+		kinput = append(kinput, c)
 		if autoindent {
 			if c == '\n' {
 				cursor := ctlu(&t.rasp, 0, a+len(kinput)-1)
@@ -676,17 +652,32 @@ func ktype(l *Flayer, res Resource) {
 		}
 	}
 	kout(l, t, a, c == '\n', kinput)
-	if c == SCROLLKEY || c == PAGEDOWN {
+Out:
+	switch c {
+	case INDENT, UNINDENT:
+		if l.p1 > l.p0 {
+			flushtyping(false)
+			cut(t, t.front, true, false)
+			t.lock++
+			if c == UNINDENT {
+				outTsl(mesg.Tunindent, t.tag, l.p0)
+			} else {
+				outTsl(mesg.Tindent, t.tag, l.p0)
+			}
+		} else if c == INDENT {
+			kout(l, t, a, false, kb.Tab(l.text.tabwidth, l.tabexpand))
+		}
+	case SCROLLKEY, PAGEDOWN:
 		flushtyping(false)
 		center(l, l.origin+l.f.NumChars+1)
-	} else if c == BACKSCROLLKEY || c == PAGEUP {
+	case BACKSCROLLKEY, PAGEUP:
 		flushtyping(false)
 		a0 := l.origin - l.f.NumChars
 		if a0 < 0 {
 			a0 = 0
 		}
 		center(l, a0)
-	} else if c == RIGHTARROW || c == FWDC {
+	case RIGHTARROW, FWDC:
 		flushtyping(false)
 		a0 := l.p0
 		if a0 < t.rasp.nrunes {
@@ -694,7 +685,7 @@ func ktype(l *Flayer, res Resource) {
 		}
 		flsetselect(l, a0, a0)
 		center(l, a0)
-	} else if c == LEFTARROW || c == BACKC {
+	case LEFTARROW, BACKC:
 		flushtyping(false)
 		a0 := l.p0
 		if a0 > 0 {
@@ -702,7 +693,7 @@ func ktype(l *Flayer, res Resource) {
 		}
 		flsetselect(l, a0, a0)
 		center(l, a0)
-	} else if c == UPC {
+	case UPC:
 		a0 := l.p0
 		flsetselect(l, a0, a0)
 		flushtyping(true)
@@ -728,7 +719,7 @@ func ktype(l *Flayer, res Resource) {
 				center(l, a0)
 			}
 		}
-	} else if c == DOWNC {
+	case DOWNC:
 		a0 := l.p0
 		flsetselect(l, a0, a0)
 		flushtyping(true)
@@ -755,13 +746,13 @@ func ktype(l *Flayer, res Resource) {
 				}
 			}
 		}
-	} else if c == HOMEKEY {
+	case HOMEKEY:
 		flushtyping(false)
 		center(l, 0)
-	} else if c == ENDKEY {
+	case ENDKEY:
 		flushtyping(false)
 		center(l, t.rasp.nrunes)
-	} else if c == LINESTART || c == LINEEND {
+	case LINESTART, LINEEND:
 		flushtyping(true)
 		if c == LINESTART {
 			for a > 0 && raspc(&t.rasp, a-1) != '\n' {
@@ -780,102 +771,104 @@ func ktype(l *Flayer, res Resource) {
 				flsetselect(l, l.p0, l.p1)
 			}
 		}
-	} else if c == UNDO {
+	case UNDO:
 		flushtyping(false)
 		outTs(mesg.Tundo, t.tag)
-	} else if backspacing != 0 && hostlock == 0 {
-		/* backspacing immediately after outcmd(): sorry */
-		if l.f.P0 > 0 && a > 0 {
+	default:
+		if backspacing != 0 && hostlock == 0 {
+			/* backspacing immediately after outcmd(): sorry */
+			if l.f.P0 > 0 && a > 0 {
+				switch c {
+				case '\b',
+					0x7F: /* del */
+					l.p0 = a - 1
+				case 0x15: /* ctrl-u */
+					l.p0 = ctlu(&t.rasp, l.origin, a)
+				case 0x17: /* ctrl-w */
+					l.p0 = ctlw(&t.rasp, l.origin, a)
+				}
+				l.p1 = a
+				if l.p1 != l.p0 {
+					/* cut locally if possible */
+					if typestart <= l.p0 && l.p1 <= typeend {
+						t.lock++ /* to call hcut */
+						hcut(t.tag, l.p0, l.p1-l.p0)
+						/* hcheck is local because we know rasp is contiguous */
+						hcheck(t.tag)
+					} else {
+						flushtyping(false)
+						cut(t, t.front, false, true)
+					}
+				}
+				if typeesc >= l.p0 {
+					typeesc = l.p0
+				}
+				if typestart >= 0 {
+					if typestart >= l.p0 {
+						typestart = l.p0
+					}
+					typeend = l.p0
+					if typestart == typeend {
+						typestart = -1
+						typeend = -1
+						modified = false
+					}
+				}
+			}
+		} else {
+			var i int
+			if c == ESC && typeesc >= 0 {
+				l.p0 = typeesc
+				l.p1 = a
+				flushtyping(true)
+			}
+			for i := 0; i < NL; i++ {
+				l := &t.l[i]
+				if l.textfn != nil {
+					flsetselect(l, l.p0, l.p1)
+				}
+			}
 			switch c {
-			case '\b',
-				0x7F: /* del */
-				l.p0 = a - 1
-			case 0x15: /* ctrl-u */
-				l.p0 = ctlu(&t.rasp, l.origin, a)
-			case 0x17: /* ctrl-w */
-				l.p0 = ctlw(&t.rasp, l.origin, a)
-			}
-			l.p1 = a
-			if l.p1 != l.p0 {
-				/* cut locally if possible */
-				if typestart <= l.p0 && l.p1 <= typeend {
-					t.lock++ /* to call hcut */
-					hcut(t.tag, l.p0, l.p1-l.p0)
-					/* hcheck is local because we know rasp is contiguous */
-					hcheck(t.tag)
-				} else {
-					flushtyping(false)
-					cut(t, t.front, false, true)
+			case CUT:
+				flushtyping(false)
+				cut(t, t.front, true, true)
+			case COPY:
+				flushtyping(false)
+				snarf(t, t.front)
+			case PASTE:
+				flushtyping(false)
+				paste(t, t.front)
+			case BACK:
+				t = &cmd
+				for i := 0; i < len(t.l); i++ {
+					if flinlist(&t.l[i]) {
+						l = &t.l[i]
+					}
 				}
-			}
-			if typeesc >= l.p0 {
-				typeesc = l.p0
-			}
-			if typestart >= 0 {
-				if typestart >= l.p0 {
-					typestart = l.p0
+				current(l)
+				flushtyping(false)
+				a = t.rasp.nrunes
+				flsetselect(l, a, a)
+				center(l, a)
+			case LAST:
+				if work == nil {
+					return
 				}
-				typeend = l.p0
-				if typestart == typeend {
-					typestart = -1
-					typeend = -1
-					modified = false
+				if which != work {
+					current(work)
+					return
 				}
-			}
-		}
-	} else {
-		var i int
-		if c == ESC && typeesc >= 0 {
-			l.p0 = typeesc
-			l.p1 = a
-			flushtyping(true)
-		}
-		for i := 0; i < NL; i++ {
-			l := &t.l[i]
-			if l.textfn != nil {
-				flsetselect(l, l.p0, l.p1)
-			}
-		}
-		switch c {
-		case CUT:
-			flushtyping(false)
-			cut(t, t.front, true, true)
-		case COPY:
-			flushtyping(false)
-			snarf(t, t.front)
-		case PASTE:
-			flushtyping(false)
-			paste(t, t.front)
-		case BACK:
-			t = &cmd
-			for i := 0; i < len(t.l); i++ {
-				if flinlist(&t.l[i]) {
-					l = &t.l[i]
+				t = work.text
+				l = &t.l[t.front]
+				for i = t.front; t.nwin > 1 && incr(&i) != t.front; {
+					if t.l[i].textfn != nil {
+						l = &t.l[i]
+						break
+					}
 				}
+				current(l)
+				break
 			}
-			current(l)
-			flushtyping(false)
-			a = t.rasp.nrunes
-			flsetselect(l, a, a)
-			center(l, a)
-		case LAST:
-			if work == nil {
-				return
-			}
-			if which != work {
-				current(work)
-				return
-			}
-			t = work.text
-			l = &t.l[t.front]
-			for i = t.front; t.nwin > 1 && incr(&i) != t.front; {
-				if t.l[i].textfn != nil {
-					l = &t.l[i]
-					break
-				}
-			}
-			current(l)
-			break
 		}
 	}
 }

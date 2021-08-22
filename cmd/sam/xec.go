@@ -352,6 +352,7 @@ func tw_cmd(f *File, cp *Cmd) bool {
 		error_(Ebadrhs)
 	}
 	tabwidth = tw
+	f.tabwidth = tabwidth
 	if downloaded {
 		outTsv(mesg.Htabwidth, f.tag, int64(tabwidth))
 		return true
@@ -361,6 +362,11 @@ func tw_cmd(f *File, cp *Cmd) bool {
 
 func te_cmd(f *File, cp *Cmd) bool {
 	if downloaded {
+		if f.tabexpand {
+			f.tabexpand = false
+		} else {
+			f.tabexpand = true
+		}
 		outTs(mesg.Htabexpand, f.tag)
 		return true
 	}

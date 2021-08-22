@@ -45,6 +45,8 @@ const (
 	Tplumb
 	Ttclick
 	Tundo
+	Tindent
+	Tunindent
 	TMAX
 )
 
