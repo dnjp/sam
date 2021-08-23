@@ -127,6 +127,9 @@ func linesfrom(text []rune) [][]rune {
 			lines = append(lines, text[start:i+1])
 			start = i + 1
 		}
+		if i+1 == len(text) && text[i] != '\n' {
+			lines = append(lines, text[start:])
+		}
 	}
 	if start == 0 {
 		lines = append(lines, text)
