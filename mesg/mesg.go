@@ -47,6 +47,7 @@ const (
 	Tundo
 	Tindent
 	Tunindent
+	Tcomment
 	TMAX
 )
 
