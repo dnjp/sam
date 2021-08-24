@@ -92,6 +92,11 @@ func CommentSelection(in []rune, filename string) ([]rune, error) {
 			}
 			break
 		}
+		// do not comment if we only have whitespace
+		if first == len(line) {
+			rp = append(rp, line...)
+			continue
+		}
 
 		// uncomment line if beginning charcters are the comment
 		comstart := first + len(comment)
