@@ -456,7 +456,7 @@ func ctlu(r *Rasp, o int, p int) int {
 
 func center(l *Flayer, a int) bool {
 	t := l.text
-	if a < l.origin || shouldscroll(l) {
+	if a < l.origin || shouldscroll(l, a) {
 		if a > t.rasp.nrunes {
 			a = t.rasp.nrunes
 		}
@@ -466,15 +466,20 @@ func center(l *Flayer, a int) bool {
 	return false
 }
 
-func shouldscroll(l *Flayer) bool {
-	py := float64(l.f.PointOf(l.origin + l.f.NumChars).Y)
-	my := float64(l.f.Entire.Max.Y)
-	return py/my >= 0.9
+func shouldscroll(l *Flayer, a int) bool {
+	// do not overflow command window
+	if l == &cmd.l[0] {
+		py := float64(l.f.PointOf(l.origin + l.f.NumChars).Y)
+		my := float64(l.f.Entire.Max.Y)
+		return py/my >= 0.90
+	} else {
+		return l.origin+l.f.NumChars < a
+	}
 }
 
-func thirds(l *Flayer, a int /* p0 */, n int) bool {
+func thirds(l *Flayer, a int, n int) bool {
 	t := l.text
-	if a < l.origin || shouldscroll(l) {
+	if a < l.origin || shouldscroll(l, a) {
 		if a > t.rasp.nrunes {
 			a = t.rasp.nrunes
 		}
