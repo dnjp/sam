@@ -66,7 +66,7 @@ func CommentSelection(in []rune, filename string) ([]rune, error) {
 	}
 	rp := []rune{}
 	for _, line := range linesfrom(in) {
-		if len(line) <= 1 {
+		if len(line) < 1 || (len(line) == 1 && line[0] == '\n') {
 			rp = append(rp, line...)
 			continue
 		}
