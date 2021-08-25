@@ -28,13 +28,13 @@ var DefaultFiletype = Filetype{
 	Tabexpand:  false,
 }
 
-func FindFiletype(filename string) Filetype {
+func FindFiletype(filename string) (Filetype, bool) {
 	ext := extension(filename)
 	ft, ok := Filetypes[ext]
 	if !ok {
-		return DefaultFiletype
+		return DefaultFiletype, false
 	}
-	return ft
+	return ft, true
 }
 
 func extension(filename string) string {

@@ -395,25 +395,22 @@ func inmesg(type_ mesg.Tmesg) bool {
 		p0 = inlong()
 		journaln(0, p0)
 		var count int
+		ft, ok := kb.FindFiletype(Strtoc(&f.name))
+		if !ok {
+			if f.tabwidth > 0 {
+				ft.Tabwidth = f.tabwidth
+			}
+			if f.tabexpand {
+				ft.Tabexpand = f.tabexpand
+			}
+		}
 		for l = 0; l < snarfbuf.nc; l += m {
 			m = snarfbuf.nc - l
 			if m > BLOCKSIZE {
 				m = BLOCKSIZE
 			}
 			bufread(&snarfbuf, l, genbuf[:m])
-			rp, err := kb.IndentSelection(
-				genbuf[:m],
-				p0,
-				p1,
-				func() int {
-					if f.tabwidth > 0 {
-						return f.tabwidth
-					}
-					return 8
-				}(),
-				f.tabexpand,
-				!indenting,
-			)
+			rp, err := ft.IndentSelection(genbuf[:m], !indenting)
 			if err != nil {
 				panic(err)
 			}
@@ -434,13 +431,14 @@ func inmesg(type_ mesg.Tmesg) bool {
 		p0 = inlong()
 		journaln(0, p0)
 		var count int
+		ft, _ := kb.FindFiletype(Strtoc(&f.name))
 		for l = 0; l < snarfbuf.nc; l += m {
 			m = snarfbuf.nc - l
 			if m > BLOCKSIZE {
 				m = BLOCKSIZE
 			}
 			bufread(&snarfbuf, l, genbuf[:m])
-			rp, err := kb.CommentSelection(genbuf[:m], Strtoc(&f.name))
+			rp, err := ft.CommentSelection(genbuf[:m])
 			if err != nil {
 				panic(err)
 			}

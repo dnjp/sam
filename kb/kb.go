@@ -16,40 +16,57 @@ func Tab(tw int, tabexpand bool) []rune {
 	return tab
 }
 
-func IndentSelection(in []rune, p0, p1, tw int, tabexpand, unindent bool) ([]rune, error) {
-	out := []rune{}
-	txt := in
-	if len(txt) < p1-p0 {
-		return out, fmt.Errorf("selection is greater than given input")
-	}
-	tab := Tab(tw, tabexpand)
-	if !unindent {
-		out = append(out, tab...)
-	}
-	for i := 0; i < len(txt); i++ {
-		ch := txt[i]
-		if ch == '\n' && i+1 != len(txt) && txt[i+1] != 0 {
-			out = append(out, ch)
-			if !unindent {
-				out = append(out, tab...)
-			}
-		} else {
-			if cont := stab(txt, i, tab); cont > 0 && unindent {
-				if cont == 1 {
-					continue
-				} else {
-					i += cont - 1
-					continue
-				}
-			}
-			out = append(out, ch)
+func (ft Filetype) IndentSelection(in []rune, unindent bool) ([]rune, error) {
+	tabwidth := ft.Tabwidth
+	tabexpand := ft.Tabexpand
+	tab := string(Tab(tabwidth, tabexpand))
+	rp := []rune{}
+	for _, line := range linesfrom(in) {
+		tabs := 0
+		spaces := 0
+		first := 0
+		offset := 0
+		linestr := string(line)
+		if len(line) < 1 || (len(line) == 1 && line[0] == '\n') {
+			rp = append(rp, line...)
+			continue
 		}
+		// find first non-indentation character
+		for _, ch := range line {
+			if ch == ' ' {
+				first++
+				spaces++
+				continue
+			} else if ch == '\t' {
+				first++
+				tabs++
+				continue
+			}
+			break
+		}
+		// do not comment if we only have whitespace
+		if first == len(line) {
+			rp = append(rp, line...)
+			continue
+		}
+		if unindent {
+			tab = ""
+			if tabs > spaces {
+				offset = 1
+			}
+			if spaces > tabs {
+				offset = tabwidth
+			}
+		}
+		if offset > first {
+			return rp, fmt.Errorf("improper offset for indentation")
+		}
+		rp = append(rp, []rune(linestr[offset:first]+tab+linestr[first:])...)
 	}
-	return out, nil
+	return rp, nil
 }
 
-func CommentSelection(in []rune, filename string) ([]rune, error) {
-	ft := FindFiletype(filename)
+func (ft Filetype) CommentSelection(in []rune) ([]rune, error) {
 	comment := ft.Comment
 	// parse starting/ending comment parts if present
 	parts := strings.Split(strings.TrimSuffix(comment, " "), " ")
@@ -65,22 +82,27 @@ func CommentSelection(in []rune, filename string) ([]rune, error) {
 		}
 	}
 	rp := []rune{}
-	for _, line := range linesfrom(in) {
+	c := 0
+	nc := 0
+	lines := linesfrom(in)
+	for _, line := range lines {
+		if multipart {
+			if strings.Contains(string(line), startcom) &&
+				strings.Contains(string(line), endcom) {
+				c++
+			}
+		} else if strings.Contains(string(line), comment) {
+			nc++
+		} else {
+			c++
+		}
+	}
+	uncomment := nc > c
+	for _, line := range lines {
+		linestr := string(line)
 		if len(line) < 1 || (len(line) == 1 && line[0] == '\n') {
 			rp = append(rp, line...)
 			continue
-		}
-		linestr := string(line)
-		if multipart {
-			// uncomment multipart commented line
-			hasbegin := strings.Contains(linestr, startcom)
-			hasend := strings.Contains(linestr, endcom)
-			if hasbegin && hasend {
-				nline := strings.Replace(linestr, startcom, "", 1)
-				nline = strings.Replace(nline, endcom, "", 1)
-				rp = append(rp, []rune(nline)...)
-				continue
-			}
 		}
 
 		// find first non-indentation character
@@ -98,15 +120,26 @@ func CommentSelection(in []rune, filename string) ([]rune, error) {
 			continue
 		}
 
-		// uncomment line if beginning charcters are the comment
-		comstart := first + len(comment)
-		if len(line) > comstart && linestr[first:comstart] == comment {
-			nline := strings.Replace(linestr, comment, "", 1)
-			rp = append(rp, []rune(nline)...)
+		if uncomment {
+			if multipart {
+				hasbegin := strings.Contains(linestr, startcom)
+				hasend := strings.Contains(linestr, endcom)
+				if hasbegin && hasend {
+					nline := strings.Replace(linestr, startcom, "", 1)
+					nline = strings.Replace(nline, endcom, "", 1)
+					rp = append(rp, []rune(nline)...)
+				}
+				continue
+			}
+			comstart := first + len(comment)
+			if len(line) > comstart && linestr[first:comstart] == comment {
+				nline := strings.Replace(linestr, comment, "", 1)
+				rp = append(rp, []rune(nline)...)
+				continue
+			}
+			rp = append(rp, line...)
 			continue
 		}
-
-		// comment line using appropriate comment structure
 		if multipart {
 			end := len(line)
 			if line[end-1] == '\n' {
