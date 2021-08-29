@@ -3,11 +3,12 @@ package kb
 import "strings"
 
 type Filetype struct {
-	Name       string
-	Extensions []string
-	Comment    string
-	Tabwidth   int
-	Tabexpand  bool
+	Name         string
+	Extensions   []string
+	Comment      string
+	Tabwidth     int
+	Tabexpand    bool
+	commentparts []string
 }
 
 var Filetypes = func() map[string]Filetype {
@@ -35,6 +36,54 @@ func FindFiletype(filename string) (Filetype, bool) {
 		return DefaultFiletype, false
 	}
 	return ft, true
+}
+
+func (ft Filetype) HasComment(line string) bool {
+	multipart := len(ft.commentParts()) > 1
+	startcom := ft.commentStart()
+	endcom := ft.commentEnd()
+	comment := ft.Comment
+	if multipart {
+		comment = startcom
+	}
+	if strings.Contains(line, comment) {
+		if multipart && !strings.Contains(line, endcom) {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func (ft Filetype) commentParts() []string {
+	if len(ft.commentparts) == 0 {
+		ft.commentparts = strings.Split(strings.TrimSuffix(ft.Comment, " "), " ")
+	}
+	return ft.commentparts
+}
+
+func (ft Filetype) commentStart() string {
+	parts := ft.commentParts()
+	start := ""
+	if len(parts) >= 1 {
+		start = parts[0]
+	}
+	if len(start) > 1 && start[len(start)-1] != ' ' {
+		start += " "
+	}
+	return start
+}
+
+func (ft Filetype) commentEnd() string {
+	parts := ft.commentParts()
+	end := ""
+	if len(parts) >= 2 {
+		end = parts[1]
+	}
+	if len(end) > 1 && end[0] != ' ' {
+		end = " " + end
+	}
+	return end
 }
 
 func extension(filename string) string {

@@ -398,7 +398,7 @@ func collecttoken(end string) *String {
 	}
 	for {
 		c = getch()
-		if c <= 0 || strings.ContainsRune(end, c) { 
+		if c <= 0 || strings.ContainsRune(end, c) {
 			break
 		}
 		Straddc(s, c)

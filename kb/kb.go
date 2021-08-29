@@ -72,35 +72,22 @@ func (ft Filetype) CommentSelection(in []rune) ([]rune, error) {
 		comment += " "
 	}
 	// parse starting/ending comment parts if present
-	parts := strings.Split(strings.TrimSuffix(comment, " "), " ")
+	parts := ft.commentParts()
 	multipart := len(parts) > 1
-	var startcom string
-	var endcom string
-	if multipart {
-		if len(parts[0]) > 0 {
-			startcom = parts[0] + " "
-		}
-		if len(parts[1]) > 0 {
-			endcom = " " + parts[1]
-		}
-	}
+	startcom := ft.commentStart()
+	endcom := ft.commentEnd()
 	rp := []rune{}
 	c := 0
 	nc := 0
 	lines := linesfrom(in)
 	for _, line := range lines {
-		if multipart {
-			if strings.Contains(string(line), startcom) &&
-				strings.Contains(string(line), endcom) {
-				c++
-			}
-		} else if strings.Contains(string(line), comment) {
-			nc++
-		} else {
+		if ft.HasComment(string(line)) {
 			c++
+		} else {
+			nc++
 		}
 	}
-	uncomment := nc > c
+	uncomment := c > nc
 	for _, line := range lines {
 		linestr := string(line)
 		if len(line) < 1 || (len(line) == 1 && line[0] == '\n') {

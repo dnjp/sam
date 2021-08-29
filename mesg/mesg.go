@@ -85,7 +85,7 @@ const (
 	Hplumb
 	Htabwidth  // tab width
 	Htabexpand // tab expand
-	Hcomment // comment style
+	Hcomment   // comment style
 	HMAX
 )
 
