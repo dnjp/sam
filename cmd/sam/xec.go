@@ -362,12 +362,15 @@ func tw_cmd(f *File, cp *Cmd) bool {
 
 func te_cmd(f *File, cp *Cmd) bool {
 	if downloaded {
+		var te int64
 		if f.tabexpand {
+			te = 0
 			f.tabexpand = false
 		} else {
+			te = 1
 			f.tabexpand = true
 		}
-		outTs(mesg.Htabexpand, f.tag)
+		outTsv(mesg.Htabexpand, f.tag, te)
 		return true
 	}
 	return false

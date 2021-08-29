@@ -127,6 +127,7 @@ func inmesg(typ mesg.Hmesg, count int) {
 		break
 
 	case mesg.Htabexpand:
+		te := invlong(2)
 		i := whichmenu(m)
 		t := whichtext(m)
 		if i < 0 || t == nil {
@@ -136,10 +137,10 @@ func inmesg(typ mesg.Hmesg, count int) {
 		if t.l[t.front].textfn == nil {
 			break
 		}
-		if lp.text.tabexpand {
-			lp.text.tabexpand = false
-		} else {
+		if te > 0 {
 			lp.text.tabexpand = true
+		} else {
+			lp.text.tabexpand = false
 		}
 		break
 

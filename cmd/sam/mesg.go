@@ -284,12 +284,14 @@ func inmesg(type_ mesg.Tmesg) bool {
 		if Aflag {
 			ft, ok := kb.FindFiletype(Strtoc(&f.name))
 			if ok {
-				f.tabexpand = ft.Tabexpand
-				if f.tabexpand {
-					outTs(mesg.Htabexpand, f.tag)
-				}
 				f.tabwidth = ft.Tabwidth
 				outTsv(mesg.Htabwidth, f.tag, int64(f.tabwidth))
+				f.tabexpand = ft.Tabexpand
+				var te int64
+				if ft.Tabexpand {
+					te = 1
+				}
+				outTsv(mesg.Htabexpand, f.tag, te)
 			}
 		}
 
