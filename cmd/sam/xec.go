@@ -373,6 +373,20 @@ func te_cmd(f *File, cp *Cmd) bool {
 	return false
 }
 
+func com_cmd(f *File, cp *Cmd) bool {
+	var com string
+	var s *String
+	com = strings.TrimSpace(Strtoc(cp.ctext))
+	f.comment = com
+	if downloaded {
+		s = new(String)
+		s.s = []rune(com)
+		outTsS(mesg.Hcomment, f.tag, s)
+		return true
+	}
+	return false
+}
+
 func fappend(f *File, cp *Cmd, p Posn) bool {
 	if len(cp.ctext.s) > 0 && cp.ctext.s[len(cp.ctext.s)-1] == 0 {
 		// TODO(rsc): Where did the NUL come from?

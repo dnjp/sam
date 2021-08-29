@@ -25,14 +25,16 @@ type Rasp struct {
 const Untagged = 0xFFFF
 
 type Text struct {
-	rasp     Rasp
-	nwin     int
-	front    int
-	tag      int
-	lock     int8
-	l        [NL]Flayer
-	id       int64
-	tabwidth int
+	rasp      Rasp
+	nwin      int
+	front     int
+	tag       int
+	lock      int8
+	l         [NL]Flayer
+	id        int64
+	tabwidth  int
+	tabexpand bool
+	comment   []rune
 }
 
 type Readbuf struct {

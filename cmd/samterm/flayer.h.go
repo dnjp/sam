@@ -19,18 +19,17 @@ const (
 )
 
 type Flayer struct {
-	f         frame.Frame
-	origin    int
-	p0        int
-	p1        int
-	click     uint32
-	textfn    func(*Flayer, int) []rune
-	text      *Text
-	entire    image.Rectangle
-	scroll    image.Rectangle
-	lastsr    image.Rectangle
-	visible   Vis
-	tabexpand bool
+	f       frame.Frame
+	origin  int
+	p0      int
+	p1      int
+	click   uint32
+	textfn  func(*Flayer, int) []rune
+	text    *Text
+	entire  image.Rectangle
+	scroll  image.Rectangle
+	lastsr  image.Rectangle
+	visible Vis
 }
 
 func FLMARGIN(l *Flayer) int    { return flscale(l, 2) }

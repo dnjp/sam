@@ -432,6 +432,9 @@ func inmesg(type_ mesg.Tmesg) bool {
 		journaln(0, p0)
 		var count int
 		ft, _ := kb.FindFiletype(Strtoc(&f.name))
+		if len(f.comment) != 0 {
+			ft.Comment = string(f.comment)
+		}
 		for l = 0; l < snarfbuf.nc; l += m {
 			m = snarfbuf.nc - l
 			if m > BLOCKSIZE {

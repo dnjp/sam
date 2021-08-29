@@ -68,6 +68,9 @@ func (ft Filetype) IndentSelection(in []rune, unindent bool) ([]rune, error) {
 
 func (ft Filetype) CommentSelection(in []rune) ([]rune, error) {
 	comment := ft.Comment
+	if comment[len(comment)-1] != ' ' {
+		comment += " "
+	}
 	// parse starting/ending comment parts if present
 	parts := strings.Split(strings.TrimSuffix(comment, " "), " ")
 	multipart := len(parts) > 1

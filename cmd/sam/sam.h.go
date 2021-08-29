@@ -138,6 +138,7 @@ type File struct {
 	prevmod   bool
 	tabexpand bool
 	tabwidth  int
+	comment   string
 }
 
 /*File*		fileaddtext(File*, Text*); */
