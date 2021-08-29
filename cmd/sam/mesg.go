@@ -32,16 +32,16 @@ var journal_file *os.File
 var hname = [26]string{
 	mesg.Hversion:    "Hversion",
 	mesg.Hbindname:   "Hbindname",
-	mesg.Hcurrent:    "mesg.Hcurrent",
+	mesg.Hcurrent:    "Hcurrent",
 	mesg.Hnewname:    "Hnewname",
 	mesg.Hmovname:    "Hmovname",
 	mesg.Hgrow:       "Hgrow",
-	mesg.Hcheck0:     "mesg.Hcheck0",
-	mesg.Hcheck:      "mesg.Hcheck",
-	mesg.Hunlock:     "mesg.Hunlock",
-	mesg.Hdata:       "mesg.Hdata",
+	mesg.Hcheck0:     "Hcheck0",
+	mesg.Hcheck:      "Hcheck",
+	mesg.Hunlock:     "Hunlock",
+	mesg.Hdata:       "Hdata",
 	mesg.Horigin:     "Horigin",
-	mesg.Hunlockfile: "mesg.Hunlockfile",
+	mesg.Hunlockfile: "Hunlockfile",
 	mesg.Hsetdot:     "Hsetdot",
 	mesg.Hgrowdata:   "Hgrowdata",
 	mesg.Hmoveto:     "Hmoveto",
@@ -59,10 +59,10 @@ var hname = [26]string{
 }
 
 var tname = [28]string{
-	mesg.Tversion:      "mesg.Tversion",
+	mesg.Tversion:      "Tversion",
 	mesg.Tstartcmdfile: "Tstartcmdfile",
-	mesg.Tcheck:        "mesg.Tcheck",
-	mesg.Trequest:      "mesg.Trequest",
+	mesg.Tcheck:        "Tcheck",
+	mesg.Trequest:      "Trequest",
 	mesg.Torigin:       "Torigin",
 	mesg.Tstartfile:    "Tstartfile",
 	mesg.Tworkfile:     "Tworkfile",
@@ -281,6 +281,15 @@ func inmesg(type_ mesg.Tmesg) bool {
 			bufread(&f.b, r.p1, buf[:i])
 		}
 		outTslS(mesg.Hdata, f.tag, r.p1, tmprstr(buf[:i]))
+		ft, ok := kb.FindFiletype(Strtoc(&f.name))
+		if ok {
+			f.tabexpand = ft.Tabexpand
+			if f.tabexpand {
+				outTs(mesg.Htabexpand, f.tag)
+			}
+			f.tabwidth = ft.Tabwidth
+			outTsv(mesg.Htabwidth, f.tag, int64(f.tabwidth))
+		}
 
 	case mesg.Torigin:
 		s = inshort()
