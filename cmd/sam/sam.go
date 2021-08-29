@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dnjp/sam/kb"
 	"github.com/dnjp/sam/mesg"
 )
 
@@ -404,6 +405,15 @@ func edit(f *File, cmd string) {
 	}
 	if cmd == "e" {
 		filename(f)
+	}
+	ft, ok := kb.FindFiletype(Strtoc(&f.name))
+	if ok {
+		f.tabexpand = ft.Tabexpand
+		if f.tabexpand {
+			outTs(mesg.Htabexpand, f.tag)
+		}
+		f.tabwidth = ft.Tabwidth
+		outTsv(mesg.Htabwidth, f.tag, int64(f.tabwidth))
 	}
 }
 
