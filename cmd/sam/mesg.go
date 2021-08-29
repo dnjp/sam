@@ -281,14 +281,16 @@ func inmesg(type_ mesg.Tmesg) bool {
 			bufread(&f.b, r.p1, buf[:i])
 		}
 		outTslS(mesg.Hdata, f.tag, r.p1, tmprstr(buf[:i]))
-		ft, ok := kb.FindFiletype(Strtoc(&f.name))
-		if ok {
-			f.tabexpand = ft.Tabexpand
-			if f.tabexpand {
-				outTs(mesg.Htabexpand, f.tag)
+		if Aflag {
+			ft, ok := kb.FindFiletype(Strtoc(&f.name))
+			if ok {
+				f.tabexpand = ft.Tabexpand
+				if f.tabexpand {
+					outTs(mesg.Htabexpand, f.tag)
+				}
+				f.tabwidth = ft.Tabwidth
+				outTsv(mesg.Htabwidth, f.tag, int64(f.tabwidth))
 			}
-			f.tabwidth = ft.Tabwidth
-			outTsv(mesg.Htabwidth, f.tag, int64(f.tabwidth))
 		}
 
 	case mesg.Torigin:
