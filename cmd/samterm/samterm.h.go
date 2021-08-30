@@ -37,11 +37,6 @@ type Text struct {
 	comment   []rune
 }
 
-type Readbuf struct {
-	n    int
-	data [READBUFSIZE]uint8
-}
-
 type Resource int
 
 const (

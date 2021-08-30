@@ -52,8 +52,3 @@ var lockarrow = draw.Cursor{
 	},
 }
 
-var darkgrey *draw.Image
-
-func iconinit() {
-	darkgrey, _ = display.AllocImage(image.Rect(0, 0, 1, 1), screen.Pix, true, 0x444444FF)
-}

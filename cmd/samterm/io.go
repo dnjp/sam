@@ -9,7 +9,6 @@ import (
 
 var (
 	protodebug bool
-	cursorfd   int
 	plumbfd    *client.Fid
 	got        int
 	block      int
@@ -161,6 +160,7 @@ func getch() int {
 }
 
 func externchar() rune {
+	// TODO(dnjp): the surrounding loop is unconditionally terminated (SA4004)
 	for got&(1<<RPlumb)&^block != 0 {
 		if len(externcmd) == 0 {
 			got &^= 1 << RPlumb

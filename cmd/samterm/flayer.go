@@ -141,8 +141,7 @@ func newvisibilities(redraw bool) {
 				l.f.B.Free()
 			}
 			fallthrough
-		case V(All, None),
-			V(All, Some):
+		case V(All, None), V(All, Some):
 			l.f.B = nil
 			l.f.Clear(false)
 
@@ -158,9 +157,8 @@ func newvisibilities(redraw bool) {
 				l.f.Clear(false)
 			}
 			fallthrough
-		case V(None, None),
-			V(All, All):
-			break
+
+		case V(None, None), V(All, All):
 
 		case V(Some, All):
 			if l.f.B != nil {

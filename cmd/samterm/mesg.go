@@ -103,10 +103,6 @@ func inmesg(typ mesg.Hmesg, count int) {
 	case -1:
 		panic("rcv error")
 		// fallthrough
-	default:
-		fmt.Fprintf(os.Stderr, "type %d\n", typ)
-		panic("rcv unknown")
-		// fallthrough
 
 	case mesg.Hversion:
 		hversion = m
@@ -116,7 +112,6 @@ func inmesg(typ mesg.Hmesg, count int) {
 		i := whichmenu(m)
 		t := whichtext(m)
 		if i < 0 || t == nil {
-			panic("NOT CURRENT")
 			break
 		}
 		t.tabwidth = int(l)
@@ -124,7 +119,6 @@ func inmesg(typ mesg.Hmesg, count int) {
 		if t.l[t.front].textfn != nil {
 			lp.f.MaxTab = int(l * int64(lp.f.Font.StringWidth("0")))
 		}
-		break
 
 	case mesg.Htabexpand:
 		te := invlong(2)
@@ -142,16 +136,13 @@ func inmesg(typ mesg.Hmesg, count int) {
 		} else {
 			lp.text.tabexpand = false
 		}
-		break
 
 	case mesg.Hcomment:
 		s := inrunes()
 		t := whichtext(m)
-		t.comment = s
 		if t.l[t.front].textfn != nil {
-			t.comment = t.comment
+			t.comment = s
 		}
-		break
 
 	case mesg.Hbindname:
 		l := invlong(2) /* for 64-bit pointers */
@@ -352,6 +343,9 @@ func inmesg(typ mesg.Hmesg, count int) {
 
 	case mesg.Hplumb:
 		hplumb(m)
+	default:
+		fmt.Fprintf(os.Stderr, "type %d\n", typ)
+		panic("rcv unknown")
 	}
 	return
 
@@ -421,22 +415,9 @@ func outT0(typ mesg.Tmesg) {
 	outsend()
 }
 
-func outTl(typ mesg.Tmesg, l int) {
-	outstart(typ)
-	outlong(l)
-	outsend()
-}
-
 func outTs(typ mesg.Tmesg, s int) {
 	outstart(typ)
 	outshort(s)
-	outsend()
-}
-
-func outTss(typ mesg.Tmesg, s1 int, s2 int) {
-	outstart(typ)
-	outshort(s1)
-	outshort(s2)
 	outsend()
 }
 
