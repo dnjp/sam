@@ -52,19 +52,6 @@ type String struct {
 
 func (s String) String() string { return string(s.s) }
 
-type List struct {
-	type_  int
-	nalloc int
-	nused  int
-	g      struct {
-		listp   *[0]byte
-		voidp   **[0]byte
-		posnp   *Posn
-		stringp **String
-		filep   **File
-	}
-}
-
 // #define	listptr		g.listp
 // #define	voidpptr	g.voidp
 // #define	posnptr		g.posnp
@@ -138,6 +125,7 @@ type File struct {
 	prevmod   bool
 	tabexpand bool
 	tabwidth  int
+	comment   string
 }
 
 /*File*		fileaddtext(File*, Text*); */

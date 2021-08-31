@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"os"
 	"os/signal"
@@ -11,18 +10,6 @@ import (
 	"github.com/dnjp/sam/kb"
 	"github.com/dnjp/sam/mesg"
 )
-
-var logfile = func() *os.File {
-	f, err := os.OpenFile("/tmp/samterm.out", os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}()
-
-func logf(fmtstr string, args ...interface{}) {
-	logfile.Write([]byte(fmt.Sprintf(fmtstr, args...)))
-}
 
 var (
 	cmd         Text
@@ -60,7 +47,7 @@ func main() {
 	os.Stdout = os.Stderr
 
 	// ignore interrupt signals
-	signal.Notify(make(chan os.Signal), os.Interrupt)
+	signal.Notify(make(chan os.Signal, 1), os.Interrupt)
 
 	if protodebug {
 		print("getscreen\n")
@@ -69,7 +56,6 @@ func main() {
 	if protodebug {
 		print("iconinit\n")
 	}
-	iconinit()
 	if protodebug {
 		print("initio\n")
 	}
@@ -128,8 +114,7 @@ func main() {
 				continue
 			}
 			nwhich := flwhich(mousep.Point)
-			scr := which != nil && mousep.Point.In(which.scroll)
-			scr = which != nil && (mousep.Point.In(which.scroll)) ||
+			scr := which != nil && (mousep.Point.In(which.scroll)) ||
 				mousep.Buttons&(8|16) != 0
 			if mousep.Buttons != 0 {
 				flushtyping(true)
@@ -498,10 +483,6 @@ func onethird(l *Flayer, a int) bool {
 	return thirds(l, a, 1)
 }
 
-func twothirds(l *Flayer, a int) bool {
-	return thirds(l, a, 2)
-}
-
 // flushtyping sets the current state based on
 // what was typed.
 func flushtyping(clearesc bool) {
@@ -609,7 +590,6 @@ func nontypingkey(c rune) bool {
 	return false
 }
 
-var indentq []rune
 var kinput = make([]rune, 0, 100)
 
 func ktype(l *Flayer, res Resource) {
@@ -691,7 +671,7 @@ Out:
 				outTsl(mesg.Tindent, t.tag, l.p0)
 			}
 		} else if c == INDENT {
-			kout(l, t, a, false, kb.Tab(l.text.tabwidth, l.tabexpand))
+			kout(l, t, a, false, kb.Tab(l.text.tabwidth, l.text.tabexpand))
 		}
 	case COMMENT:
 		flushtyping(false)
@@ -898,7 +878,6 @@ Out:
 					}
 				}
 				current(l)
-				break
 			}
 		}
 	}

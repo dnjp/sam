@@ -9,7 +9,7 @@ import (
 var tmpfile *os.File
 
 func lognew() error {
-	f, err := os.CreateTemp("/tmp", "sam.")
+	f, err := os.OpenFile("/tmp/sam.out", os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}

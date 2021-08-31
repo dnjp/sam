@@ -13,7 +13,6 @@
 package main
 
 import (
-	"os"
 	"reflect"
 	"unsafe"
 )
@@ -321,13 +320,6 @@ func fileunsetmark(f *File, delta *Buffer, mark Range) {
 	bufinsert(delta, delta.nc, undorunes(&u))
 }
 
-func fileload(f *File, p0 int, fd *os.File, nulls *bool) int {
-	if f.seq > 0 {
-		panic_("undo in file.load unimplemented")
-	}
-	return bufload(&f.b, p0, fd, nulls)
-}
-
 func fileupdate(f *File, notrans, toterm bool) bool {
 	if f.rescuing != 0 {
 		return false
@@ -510,21 +502,11 @@ func fileundo(f *File, isundo, canredo bool, q0p *int, q1p *int, flag bool) {
 	raspdone(f, flag)
 }
 
-func filereset(f *File) {
-	bufreset(&f.delta)
-	bufreset(&f.epsilon)
-	f.seq = 0
-}
-
 func fileclose(f *File) {
 	Strclose(&f.name)
 	bufclose(&f.b)
 	bufclose(&f.delta)
 	bufclose(&f.epsilon)
-	if f.rasp != nil {
-		// listfree(f.rasp)
-	}
-	// free(f)
 }
 
 func filemark(f *File) {

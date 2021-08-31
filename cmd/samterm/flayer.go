@@ -61,7 +61,7 @@ func flinit(l *Flayer, r image.Rectangle, ft *draw.Font, cols []*draw.Image) {
 	l.f.Display = display // for FLMARGIN
 	l.f.Init(flrect(l, r).Inset(FLMARGIN(l)), ft, screen, cols)
 	l.f.MaxTab = maxtab * ft.StringWidth("0")
-	l.tabexpand = false
+	l.text.tabexpand = false
 	newvisibilities(true)
 	screen.Draw(l.entire, l.f.Cols[frame.BACK], nil, draw.ZP)
 	scrdraw(l, 0)
@@ -141,8 +141,7 @@ func newvisibilities(redraw bool) {
 				l.f.B.Free()
 			}
 			fallthrough
-		case V(All, None),
-			V(All, Some):
+		case V(All, None), V(All, Some):
 			l.f.B = nil
 			l.f.Clear(false)
 
@@ -158,9 +157,8 @@ func newvisibilities(redraw bool) {
 				l.f.Clear(false)
 			}
 			fallthrough
-		case V(None, None),
-			V(All, All):
-			break
+
+		case V(None, None), V(All, All):
 
 		case V(Some, All):
 			if l.f.B != nil {

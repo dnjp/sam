@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"os/user"
 )
 
 var inerror = false
@@ -94,20 +93,6 @@ func print_s(s string, a *String) {
 	dprint("?warning: %s `%s'\n", s, a)
 }
 
-var getuser_user string
-
-func getuser() string {
-	if getuser_user != "" {
-		u, err := user.Current()
-		if err != nil {
-			getuser_user = "nobody"
-		} else {
-			getuser_user = u.Username
-		}
-	}
-	return getuser_user
-}
-
 func hup(c chan os.Signal) {
 	<-c
 	panicking = 1 /* ??? */
@@ -118,7 +103,7 @@ func hup(c chan os.Signal) {
 var SIGHUP os.Signal
 
 func siginit() {
-	signal.Notify(make(chan os.Signal), os.Interrupt)
+	signal.Notify(make(chan os.Signal, 1), os.Interrupt)
 	if SIGHUP != nil {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, SIGHUP)

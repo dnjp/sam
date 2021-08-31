@@ -104,10 +104,6 @@ func warn_SS(s Warn, a *String, b *String) {
 	print_ss(wmsg[s], a, b)
 }
 
-func warn_s(s Warn, a string) {
-	dprint("?warning: %s `%s'\n", wmsg[s], a)
-}
-
 func termwrite(s string) {
 	if downloaded {
 		p := tmpcstr(s)

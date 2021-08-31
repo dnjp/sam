@@ -27,21 +27,20 @@ var snarfbuf Buffer
 var waitack bool
 var outbuffered bool
 var tversion int
-var journal_file *os.File
 
 var hname = [26]string{
 	mesg.Hversion:    "Hversion",
 	mesg.Hbindname:   "Hbindname",
-	mesg.Hcurrent:    "mesg.Hcurrent",
+	mesg.Hcurrent:    "Hcurrent",
 	mesg.Hnewname:    "Hnewname",
 	mesg.Hmovname:    "Hmovname",
 	mesg.Hgrow:       "Hgrow",
-	mesg.Hcheck0:     "mesg.Hcheck0",
-	mesg.Hcheck:      "mesg.Hcheck",
-	mesg.Hunlock:     "mesg.Hunlock",
-	mesg.Hdata:       "mesg.Hdata",
+	mesg.Hcheck0:     "Hcheck0",
+	mesg.Hcheck:      "Hcheck",
+	mesg.Hunlock:     "Hunlock",
+	mesg.Hdata:       "Hdata",
 	mesg.Horigin:     "Horigin",
-	mesg.Hunlockfile: "mesg.Hunlockfile",
+	mesg.Hunlockfile: "Hunlockfile",
 	mesg.Hsetdot:     "Hsetdot",
 	mesg.Hgrowdata:   "Hgrowdata",
 	mesg.Hmoveto:     "Hmoveto",
@@ -59,10 +58,10 @@ var hname = [26]string{
 }
 
 var tname = [28]string{
-	mesg.Tversion:      "mesg.Tversion",
+	mesg.Tversion:      "Tversion",
 	mesg.Tstartcmdfile: "Tstartcmdfile",
-	mesg.Tcheck:        "mesg.Tcheck",
-	mesg.Trequest:      "mesg.Trequest",
+	mesg.Tcheck:        "Tcheck",
+	mesg.Trequest:      "Trequest",
 	mesg.Torigin:       "Torigin",
 	mesg.Tstartfile:    "Tstartfile",
 	mesg.Tworkfile:     "Tworkfile",
@@ -148,7 +147,6 @@ func rcvchar() int {
 
 var rcv_state int = 0
 var rcv_count int = 0
-var rcv_i int = 0
 
 func rcv() bool {
 	for c := rcvchar(); c >= 0; c = rcvchar() {
@@ -225,11 +223,6 @@ func inmesg(type_ mesg.Tmesg) bool {
 		panic_("rcv error")
 		fallthrough
 
-	default:
-		fmt.Fprintf(os.Stderr, "unknown type %d\n", type_)
-		panic_("rcv unknown")
-		fallthrough
-
 	case mesg.Tversion:
 		tversion = inshort()
 		journaln(0, tversion)
@@ -281,6 +274,19 @@ func inmesg(type_ mesg.Tmesg) bool {
 			bufread(&f.b, r.p1, buf[:i])
 		}
 		outTslS(mesg.Hdata, f.tag, r.p1, tmprstr(buf[:i]))
+		if Aflag {
+			ft, ok := kb.FindFiletype(Strtoc(&f.name))
+			if ok {
+				f.tabwidth = ft.Tabwidth
+				outTsv(mesg.Htabwidth, f.tag, int64(f.tabwidth))
+				f.tabexpand = ft.Tabexpand
+				var te int64
+				if ft.Tabexpand {
+					te = 1
+				}
+				outTsv(mesg.Htabexpand, f.tag, te)
+			}
+		}
 
 	case mesg.Torigin:
 		s = inshort()
@@ -395,25 +401,22 @@ func inmesg(type_ mesg.Tmesg) bool {
 		p0 = inlong()
 		journaln(0, p0)
 		var count int
+		ft, ok := kb.FindFiletype(Strtoc(&f.name))
+		if !ok {
+			if f.tabwidth > 0 {
+				ft.Tabwidth = f.tabwidth
+			}
+			if f.tabexpand {
+				ft.Tabexpand = f.tabexpand
+			}
+		}
 		for l = 0; l < snarfbuf.nc; l += m {
 			m = snarfbuf.nc - l
 			if m > BLOCKSIZE {
 				m = BLOCKSIZE
 			}
 			bufread(&snarfbuf, l, genbuf[:m])
-			rp, err := kb.IndentSelection(
-				genbuf[:m],
-				p0,
-				p1,
-				func() int {
-					if f.tabwidth > 0 {
-						return f.tabwidth
-					}
-					return 8
-				}(),
-				f.tabexpand,
-				!indenting,
-			)
+			rp, err := ft.IndentSelection(genbuf[:m], !indenting)
 			if err != nil {
 				panic(err)
 			}
@@ -434,13 +437,17 @@ func inmesg(type_ mesg.Tmesg) bool {
 		p0 = inlong()
 		journaln(0, p0)
 		var count int
+		ft, _ := kb.FindFiletype(Strtoc(&f.name))
+		if len(f.comment) != 0 {
+			ft.Comment = string(f.comment)
+		}
 		for l = 0; l < snarfbuf.nc; l += m {
 			m = snarfbuf.nc - l
 			if m > BLOCKSIZE {
 				m = BLOCKSIZE
 			}
 			bufread(&snarfbuf, l, genbuf[:m])
-			rp, err := kb.CommentSelection(genbuf[:m], Strtoc(&f.name))
+			rp, err := ft.CommentSelection(genbuf[:m])
 			if err != nil {
 				panic(err)
 			}
@@ -634,6 +641,10 @@ func inmesg(type_ mesg.Tmesg) bool {
 
 	case mesg.Texit:
 		os.Exit(0)
+
+	default:
+		fmt.Fprintf(os.Stderr, "unknown type %d\n", type_)
+		panic_("rcv unknown")
 	}
 	return true
 }
@@ -787,7 +798,7 @@ func outTsv(type_ mesg.Hmesg, s int, v int64) {
 
 func outstart(typ mesg.Hmesg) {
 	// journal(1, hname[typ])
-	outp = outmsg[len(outmsg):len(outmsg)]
+	outp = outmsg[len(outmsg):]
 	outp = append(outp, byte(typ), 0, 0)
 }
 

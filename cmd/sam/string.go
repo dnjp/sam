@@ -91,7 +91,6 @@ func Strtoc(s *String) string {
 /*
  * Build very temporary String from Rune*
  */
-var tmprstr_p String
 
 func tmprstr(r []rune) *String {
 	return &String{r}

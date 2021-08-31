@@ -16,6 +16,7 @@ import (
 	"github.com/dnjp/sam/mesg"
 )
 
+// TODO(dnjp): properly setup exname a la samterm/plan9.c
 var exname string
 
 func usage() {
@@ -64,6 +65,9 @@ func snarfswap(fromsam []byte) (fromterm []byte) {
 	}
 	fromterm = make([]byte, size)
 	n, size, err := display.ReadSnarf(fromterm)
+	if err != nil {
+		panic(fmt.Errorf("snarfswap: %+v", err))
+	}
 	if n < size {
 		return nil
 	}
