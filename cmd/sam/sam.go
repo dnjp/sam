@@ -45,15 +45,12 @@ var Rflag bool
 var Aflag bool
 var machine string
 var home string
-var bpipeok bool
 var termlocked int
 var samterm string = SAMTERM
 var rsamname string = RSAM
 var lastfile *File
 var disk *Disk
 var seq int
-
-var winsize string
 
 var baddir = [9]rune{'<', 'b', 'a', 'd', 'd', 'i', 'r', '>', '\n'}
 
@@ -105,6 +102,7 @@ func main() {
 	if err := lognew(); err != nil {
 		panic(err)
 	}
+	defer logclose()
 
 	if len(fileargs) > 0 {
 		for i := 0; i < len(fileargs); i++ {
@@ -257,10 +255,6 @@ func hiccough(s string) {
 		}
 	}
 	panic(&mainloop)
-}
-
-func intr() {
-	error_(Eintr)
 }
 
 func trytoclose(f *File) {

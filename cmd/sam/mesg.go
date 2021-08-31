@@ -27,7 +27,6 @@ var snarfbuf Buffer
 var waitack bool
 var outbuffered bool
 var tversion int
-var journal_file *os.File
 
 var hname = [26]string{
 	mesg.Hversion:    "Hversion",
@@ -148,7 +147,6 @@ func rcvchar() int {
 
 var rcv_state int = 0
 var rcv_count int = 0
-var rcv_i int = 0
 
 func rcv() bool {
 	for c := rcvchar(); c >= 0; c = rcvchar() {
@@ -223,11 +221,6 @@ func inmesg(type_ mesg.Tmesg) bool {
 	switch type_ {
 	case -1:
 		panic_("rcv error")
-		fallthrough
-
-	default:
-		fmt.Fprintf(os.Stderr, "unknown type %d\n", type_)
-		panic_("rcv unknown")
 		fallthrough
 
 	case mesg.Tversion:
@@ -648,6 +641,10 @@ func inmesg(type_ mesg.Tmesg) bool {
 
 	case mesg.Texit:
 		os.Exit(0)
+
+	default:
+		fmt.Fprintf(os.Stderr, "unknown type %d\n", type_)
+		panic_("rcv unknown")
 	}
 	return true
 }
@@ -801,7 +798,7 @@ func outTsv(type_ mesg.Hmesg, s int, v int64) {
 
 func outstart(typ mesg.Hmesg) {
 	// journal(1, hname[typ])
-	outp = outmsg[len(outmsg):len(outmsg)]
+	outp = outmsg[len(outmsg):]
 	outp = append(outp, byte(typ), 0, 0)
 }
 

@@ -129,9 +129,7 @@ func plan9(f *File, type_ string, s *String, nest bool) int {
 
 	case ">":
 		iofile = stdin
-		bpipeok = true
 		writeio(f)
-		bpipeok = false
 		closeio(-1)
 	}
 

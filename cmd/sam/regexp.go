@@ -31,7 +31,6 @@ var bstartinst *Inst /* same for backwards machine */
 type Ilist struct {
 	inst   *Inst
 	se     Rangeset
-	startp Posn
 }
 
 var tl []Ilist /* This list, next list */
@@ -283,8 +282,6 @@ func evaluntil(pri int) {
 			inst1.next = op1.first
 			pushand(inst1, inst2)
 			return /* must have been RBRA */
-		default:
-			panic_("unknown regexp operator")
 		case OR:
 			op2 = popand('|')
 			op1 = popand('|')
@@ -325,6 +322,8 @@ func evaluntil(pri int) {
 			inst1.right = op2.first
 			op2.last.next = inst2
 			pushand(inst1, inst2)
+		default:
+			panic_("unknown regexp operator")
 		}
 	}
 }
@@ -339,31 +338,6 @@ func optimize(start int) {
 		inst.next = target
 	}
 }
-
-// #ifdef	DEBUG
-func dumpstack() {
-	dprint("operators\n")
-	for ip := 0; ip < atorp; ip++ {
-		dprint("0%o\n", atorstack[ip])
-	}
-	dprint("operands\n")
-	for stk := 0; stk < andp; stk++ {
-		dprint("0%o\t0%o\n", andstack[stk].first.type_, andstack[stk].last.type_)
-	}
-}
-
-func dump() {
-	l := 0
-	for {
-		p := &program[l]
-		dprint("%p:\t0%o\t%p\t%p\n", p, p.type_, p.next, p.right)
-		if p.type_ == 0 {
-			break
-		}
-	}
-}
-
-// #endif
 
 func startlex(s []rune) {
 	exprp = s
@@ -571,15 +545,10 @@ func execute(f *File, startp Posn, eof Posn) bool {
 		/* Execute machine until this list is empty */
 		for tlp := 0; ; tlp++ {
 			inst := tl[tlp].inst
-			prev := inst
 			if inst == nil {
 				break
 			}
 		Switchstmt:
-			if inst == nil {
-				debug("%#x led to nil", prev.type_)
-			}
-			prev = inst
 			switch inst.type_ {
 			default: /* regular character */
 				if inst.type_ == int(c) {
