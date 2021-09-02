@@ -657,7 +657,7 @@ func readflist(readall, delete bool) *File {
 }
 
 func tofile(s *String) *File {
-	if s.s[0] != ' ' {
+	if len(s.s) == 0 || s.s[0] != ' ' {
 		error_(Eblank)
 	}
 	var f *File
