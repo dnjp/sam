@@ -691,7 +691,7 @@ Out:
 				outTsl(mesg.Tindent, t.tag, l.p0)
 			}
 		} else if c == INDENT {
-			kout(l, t, a, false, kb.Tab(l.text.tabwidth, l.tabexpand))
+			kout(l, t, a, false, kb.Tab(l.text.tabwidth, l.text.tabexpand))
 		}
 	case COMMENT:
 		flushtyping(false)

@@ -127,6 +127,7 @@ func inmesg(typ mesg.Hmesg, count int) {
 		break
 
 	case mesg.Htabexpand:
+		te := invlong(2)
 		i := whichmenu(m)
 		t := whichtext(m)
 		if i < 0 || t == nil {
@@ -136,10 +137,19 @@ func inmesg(typ mesg.Hmesg, count int) {
 		if t.l[t.front].textfn == nil {
 			break
 		}
-		if lp.tabexpand {
-			lp.tabexpand = false
+		if te > 0 {
+			lp.text.tabexpand = true
 		} else {
-			lp.tabexpand = true
+			lp.text.tabexpand = false
+		}
+		break
+
+	case mesg.Hcomment:
+		s := inrunes()
+		t := whichtext(m)
+		t.comment = s
+		if t.l[t.front].textfn != nil {
+			t.comment = t.comment
 		}
 		break
 
@@ -400,6 +410,10 @@ func inlong(n int) int {
 
 func invlong(n int) int64 {
 	return int64(binary.LittleEndian.Uint64(indata[n : n+8]))
+}
+
+func inrunes() []rune {
+	return []rune(string(indata[2:]))
 }
 
 func outT0(typ mesg.Tmesg) {

@@ -42,6 +42,7 @@ var quitok bool = true
 var downloaded bool
 var dflag bool
 var Rflag bool
+var Aflag bool
 var machine string
 var home string
 var bpipeok bool
@@ -70,6 +71,7 @@ func main() {
 	flag.StringVar(&rsamname, "s", rsamname, "-s")
 	flag.BoolVar(&aflag, "a", aflag, "-a (for samterm)")
 	flag.StringVar(&Wflag, "W", Wflag, "-W (for samterm)")
+	flag.BoolVar(&Aflag, "A", Aflag, "-A")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -655,7 +657,7 @@ func readflist(readall, delete bool) *File {
 }
 
 func tofile(s *String) *File {
-	if s.s[0] != ' ' {
+	if len(s.s) == 0 || s.s[0] != ' ' {
 		error_(Eblank)
 	}
 	var f *File

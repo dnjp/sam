@@ -55,6 +55,7 @@ var cmdtab1 = []Cmdtab{
 	{"Y", false, true, false, "f", aNo, 0, "", X_cmd},
 	{"tw", false, false, false, "", aNo, 0, wordx, tw_cmd},
 	{"te", false, false, false, "", aNo, 0, "", te_cmd},
+	{"com", false, false, false, "", aNo, 0, string([]rune(wordx)[1:]) /* remove space */, com_cmd},
 	{"!", false, false, false, "", aNo, 0, linex, plan9_cmd},
 	{">", false, false, false, "", aDot, 0, linex, plan9_cmd},
 	{"<", false, false, false, "", aDot, 0, linex, plan9_cmd},
