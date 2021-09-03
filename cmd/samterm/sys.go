@@ -56,20 +56,6 @@ func screensize(w *int, h *int) bool {
 	return false
 }
 
-func snarfswap(fromsam []byte) (fromterm []byte) {
-	defer display.WriteSnarf(fromsam)
-	_, size, err := display.ReadSnarf(nil)
-	if err != nil {
-		return nil
-	}
-	fromterm = make([]byte, size)
-	n, size, err := display.ReadSnarf(fromterm)
-	if n < size {
-		return nil
-	}
-	return fromterm[:n]
-}
-
 func dumperrmsg(count int, typ mesg.Hmesg, count0 int, c int) {
 	fmt.Fprintf(os.Stderr, "samterm: host mesg: count %d %#x %#x %#x %s...ignored\n", count, typ, count0, c, rcvstring())
 }

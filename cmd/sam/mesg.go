@@ -397,6 +397,16 @@ func inmesg(type_ mesg.Tmesg) bool {
 		p0 = inlong()
 		p1 = inlong()
 		snarf(whichfile(i), p0, p1, &snarfbuf, 0)
+		rp := make([]rune, snarfbuf.nc)
+		bufread(&snarfbuf, 0, rp)
+		m = snarfbuf.nc
+		if m > mesg.SNARFSIZE {
+			m = mesg.SNARFSIZE
+			dprint("?warning: snarf buffer truncated\n")
+		}
+		c := []byte(string(rp)) // TODO(rsc)
+		outTs(mesg.Hsetsnarf, len(c))
+		os.Stdout.Write(c)
 
 	case mesg.Tundo:
 		f = whichfile(inshort())
@@ -579,10 +589,8 @@ func inmesg(type_ mesg.Tmesg) bool {
 		rp := make([]rune, m)
 		bufread(&snarfbuf, 0, rp)
 		c := []byte(string(rp)) // TODO(rsc)
-		// free(rp)
 		outTs(mesg.Hsetsnarf, len(c))
 		os.Stdout.Write(c)
-		// free(c)
 
 	case mesg.Tsetsnarf:
 		m = inshort()
@@ -594,10 +602,8 @@ func inmesg(type_ mesg.Tmesg) bool {
 			c[i] = byte(rcvchar())
 		}
 		str := []rune(string(c)) // TODO(rsc)
-		// free(c)
 		bufreset(&snarfbuf)
 		bufinsert(&snarfbuf, Posn(0), str)
-		// freetmpstr(str)
 		outT0(mesg.Hunlock)
 
 	case mesg.Tack:
