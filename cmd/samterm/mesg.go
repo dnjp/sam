@@ -632,22 +632,32 @@ func hsetsnarf(nc int) {
 	for i := range osnarf {
 		osnarf[i] = byte(getch())
 	}
-	nsnarf := snarfswap(osnarf)
-	if nsnarf != nil {
-		if len(nsnarf) > mesg.SNARFSIZE {
-			nsnarf = []byte("<snarf too long>")
-		}
-		snarflen = len(nsnarf)
-		outTs(mesg.Tsetsnarf, len(nsnarf))
-		if len(nsnarf) > 0 {
-			if n, err := hostfd[1].Write(nsnarf); n != len(nsnarf) {
-				panic("snarf write error: " + err.Error())
-			}
-		}
-	} else {
-		outTs(mesg.Tsetsnarf, 0)
+	err := display.WriteSnarf(osnarf)
+	if err != nil {
+		panic(fmt.Sprintf("hsetsnarf: %+v\n", err))
 	}
-	display.SwitchCursor(cursor)
+	clrlock()
+}
+
+func readsnarf() ([]byte, error) {
+	fromterm := make([]byte, mesg.SNARFSIZE)
+	n, _, err := display.ReadSnarf(fromterm)
+	if err != nil {
+		return fromterm, err
+	}
+	if n > len(fromterm) {
+		return fromterm, fmt.Errorf("display snarf is too large for buffer")
+	}
+	return fromterm[:n], err
+}
+
+func sendsnarf(b []byte) {
+	outTs(mesg.Tsetsnarf, len(b))
+	if len(b) > 0 {
+		if n, err := hostfd[1].Write(b); n != len(b) {
+			panic("snarf write error: " + err.Error())
+		}
+	}
 }
 
 func hplumb(nc int) {

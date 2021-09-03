@@ -337,6 +337,7 @@ func snarf(t *Text, w int) {
 	if l.p1 > l.p0 {
 		snarflen = l.p1 - l.p0
 		outTsll(mesg.Tsnarf, t.tag, l.p0, l.p1)
+		setlock()
 	}
 }
 
@@ -363,7 +364,12 @@ func cut(t *Text, w int, save bool, check bool) {
 }
 
 func paste(t *Text, w int) {
-	if snarflen != 0 {
+	b, err := readsnarf()
+	if err != nil {
+		panic(fmt.Sprintf("paste: %+v\n", err))
+	}
+	sendsnarf(b)
+	if len(b) != 0 {
 		cut(t, w, false, false)
 		t.lock++
 		outTsl(mesg.Tpaste, t.tag, t.l[w].p0)

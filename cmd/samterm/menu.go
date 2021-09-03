@@ -19,7 +19,6 @@ const (
 	Snarf
 	Plumb
 	Look
-	Exch
 	Search
 	Send
 	NMENU2C
@@ -41,7 +40,6 @@ var menu2str = []string{
 	"snarf",
 	"plumb",
 	"look",
-	"<rio>",
 	"", /* storage for last pattern */
 }
 
@@ -98,11 +96,6 @@ func menu2hit() {
 		if hversion > 0 {
 			outTsll(mesg.Tplumb, t.tag, which.p0, which.p1)
 		}
-
-	case Exch:
-		snarf(t, w)
-		outT0(mesg.Tstartsnarf)
-		setlock()
 
 	case Look:
 		outTsll(mesg.Tlook, t.tag, which.p0, which.p1)
