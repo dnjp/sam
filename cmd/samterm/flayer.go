@@ -59,6 +59,7 @@ func flinit(l *Flayer, r image.Rectangle, ft *draw.Font, cols []*draw.Image) {
 	l.p0 = l.p1
 	l.origin = l.p0
 	l.f.Display = display // for FLMARGIN
+	l.f.Scroll = scrollf
 	l.f.Init(flrect(l, r).Inset(FLMARGIN(l)), ft, screen, cols)
 	l.f.MaxTab = maxtab * ft.StringWidth("0")
 	l.text.tabexpand = false
@@ -240,6 +241,9 @@ func flselect(l *Flayer) int {
 	}
 	clickcount = 0
 
+	// TODO(dnjp): This blocks until the selection is completed.
+	// in order to scroll while selecting, frame.Scroll needs
+	// to be implemented.
 	l.f.Select(mousectl)
 	l.p0 = l.f.P0 + l.origin
 	l.p1 = l.f.P1 + l.origin

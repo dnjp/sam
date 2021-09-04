@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"time"
 
 	"github.com/dnjp/9fans/draw"
 	"github.com/dnjp/9fans/draw/frame"
@@ -182,4 +183,96 @@ func scroll(l *Flayer, but int) {
 		}
 		scrorigin(l, but, p0)
 	}
+}
+
+func scrsleep(dt int) {
+	timer := time.NewTimer(time.Duration(dt) * time.Millisecond)
+	for {
+		select {
+		case <-timer.C:
+			debug("scrsleep timer done")
+			return
+		case <-mousectl.C:
+			debug("scrsleep timer stopped")
+			timer.Stop()
+			return
+		}
+	}
+}
+
+func scrollf(f *frame.Frame, dl int) {
+	
+	if f != &which.f {
+		panic("wrong frame for scroll")
+	}
+
+	debug("SCROLLF: pt=%d up=%t down=%t\n", dl, dl > 0, dl < 0)
+
+	scrlfl(which, dl)
+}
+
+func scrlfl(l *Flayer, dl int) {
+
+	if dl == 0 {
+		scrsleep(100)
+		return
+	}
+	
+	var up, down bool
+	if dl < 0 {
+		up = true
+	} else {
+		down = true
+	}
+
+	tot := scrtotal(l)
+	s := l.scroll
+	scr := scrpos(l.scroll, l.origin, l.origin+l.f.NumChars, tot)
+	r := scr
+	y := scr.Min.Y
+	my := mousep.Point.Y
+	scrback.Draw(image.Rect(0, 0, l.scroll.Dx(), l.scroll.Dy()), l.f.B, nil, l.scroll.Min)
+	var p0 int
+
+	if l.visible == None {
+		return
+	}
+
+	scrmark(l, r)
+	oy := y
+	my = mousep.Point.Y
+	if my < s.Min.Y {
+		my = s.Min.Y
+	}
+	if my >= s.Max.Y {
+		my = s.Max.Y
+	}
+
+	if up {
+		p0 = l.origin - l.f.CharOf(image.Pt(s.Max.X, my))
+		rt := scrpos(l.scroll, p0, p0+l.f.NumChars, tot)
+		y = rt.Min.Y
+	} else if down {
+		p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
+		rt := scrpos(l.scroll, p0, p0+l.f.NumChars, tot)
+		y = rt.Min.Y
+	}
+	if y != oy {
+		scrunmark(l, r)
+		r = scr.Add(image.Pt(0, y-scr.Min.Y))
+		scrmark(l, r)
+	}
+
+	scrunmark(l, r)
+	p0 = 0
+	if up {
+		p0 = int(my-s.Min.Y)/l.f.Font.Height + 1
+	} else if down {
+		p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
+		if p0 > tot {
+			p0 = tot
+		}
+	}
+
+	scrorigin(l, func() int { if up { return 1 }; return 3 }(), p0)
 }

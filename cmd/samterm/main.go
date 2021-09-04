@@ -36,6 +36,8 @@ var (
 
 const chording = true /* code here for reference but it causes deadlocks */
 
+var hasb1 bool
+
 func main() {
 	/*
 	 * sam is talking to us on fd 0 and 1.
@@ -100,6 +102,7 @@ func main() {
 			for i = 0; cmd.l[i].textfn == nil; i++ {
 			}
 			current(&cmd.l[i])
+			debug("RPLUMB (flsetselect)\n")
 			flsetselect(which, cmd.rasp.nrunes, cmd.rasp.nrunes)
 			ktype(which, RPlumb)
 		}
@@ -112,6 +115,7 @@ func main() {
 		}
 		if got&(1<<RMouse) != 0 {
 			if hostlock == 2 || !mousep.Point.In(screen.R) {
+				debug("continuing\n")
 				mouseunblock()
 				continue
 			}
@@ -119,9 +123,14 @@ func main() {
 			scr := which != nil && mousep.Point.In(which.scroll)
 			scr = which != nil && (mousep.Point.In(which.scroll)) ||
 				mousep.Buttons&(8|16) != 0
+			
+			// TODO: remove
+			hasb1 = mousep.Buttons == 1
+			
 			if mousep.Buttons != 0 {
 				flushtyping(true)
 			}
+			// debug("scr=%t chord=%d buttons=%d\n", scr, chord, mousep.Buttons)
 			if chording && chord == 1 && mousep.Buttons == 0 {
 				chord = 0
 			}
@@ -277,6 +286,7 @@ func duplicate(l *Flayer, r image.Rectangle, f *draw.Font, close bool) {
 		nl.origin = l.origin
 		rp := l.textfn(l, l.f.NumChars)
 		flinsert(nl, rp, l.origin)
+		debug("DUPLICATE (flsetselect)\n")
 		flsetselect(nl, l.p0, l.p1)
 		if close {
 			flclose(l)
@@ -343,6 +353,7 @@ func cut(t *Text, w int, save bool, check bool) {
 		snarf(t, w)
 	}
 	outTsll(mesg.Tcut, t.tag, p0, p1)
+	debug("CUT (flsetselect)\n")
 	flsetselect(l, p0, p0)
 	t.lock++
 	hcut(t.tag, p0, p1-p0)
@@ -371,6 +382,7 @@ func scrorigin(l *Flayer, but int, p0 int) {
 		return
 	}
 
+	// 1=up, 3=down
 	switch but {
 	case 1:
 		outTsll(mesg.Torigin, t.tag, l.origin, p0)
