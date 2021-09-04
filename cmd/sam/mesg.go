@@ -58,7 +58,7 @@ var hname = [26]string{
 	mesg.Hplumb:      "Hplumb",
 }
 
-var tname = [28]string{
+var tname = [29]string{
 	mesg.Tversion:      "Tversion",
 	mesg.Tstartcmdfile: "Tstartcmdfile",
 	mesg.Tcheck:        "Tcheck",
@@ -87,6 +87,7 @@ var tname = [28]string{
 	mesg.Tindent:       "Tindent",
 	mesg.Tunindent:     "Tunindent",
 	mesg.Tcomment:      "Tcomment",
+	mesg.Tlog:          "Tlog",
 }
 
 /*
@@ -480,6 +481,10 @@ func inmesg(type_ mesg.Tmesg) bool {
 		outTs(mesg.Hunlockfile, f.tag)
 		telldot(f)
 
+	case mesg.Tlog:
+		dat := inrunes(0)
+		debug("samterm: " + string(dat))
+
 	case mesg.Tstartnewfile:
 		v = invlong()
 		Strdupl(&genstr, empty)
@@ -695,6 +700,10 @@ func invlong() int64 {
 	v := binary.LittleEndian.Uint64(inp)
 	inp = inp[8:]
 	return int64(v)
+}
+
+func inrunes(idx int) []rune {
+	return []rune(string(indata[idx:]))
 }
 
 func setgenstr(f *File, p0 Posn, p1 Posn) {

@@ -12,18 +12,6 @@ import (
 	"github.com/dnjp/sam/mesg"
 )
 
-var logfile = func() *os.File {
-	f, err := os.OpenFile("/tmp/samterm.out", os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}()
-
-func logf(fmtstr string, args ...interface{}) {
-	logfile.Write([]byte(fmt.Sprintf(fmtstr, args...)))
-}
-
 var (
 	cmd         Text
 	cursor      *draw.Cursor
@@ -927,4 +915,8 @@ func gettext(l *Flayer, n int) []rune {
 
 func scrtotal(l *Flayer) int {
 	return l.text.rasp.nrunes
+}
+
+func debug(fmtstr string, args ...interface{}) {
+	outTS(mesg.Tlog, []rune(fmt.Sprintf(fmtstr, args...)))
 }
