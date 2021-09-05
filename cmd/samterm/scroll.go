@@ -103,6 +103,9 @@ func abs(x int) int {
 }
 
 func scroll(l *Flayer, but int) {
+	up := but == 1 || but == 4
+	down := but == 3 || but == 5
+	exact := but == 2
 	in := false
 	tot := scrtotal(l)
 	s := l.scroll
@@ -137,16 +140,17 @@ func scroll(l *Flayer, but int) {
 			if in && mousep.Point != image.Pt(x, my) {
 				display.MoveCursor(image.Pt(x, my))
 			}
-			if but == 1 || but == 4 {
+			switch {
+			case up:
 				p0 = l.origin - l.f.CharOf(image.Pt(s.Max.X, my))
 				rt := scrpos(l.scroll, p0, p0+l.f.NumChars, tot)
 				y = rt.Min.Y
-			} else if but == 2 {
+			case exact:
 				y = my
 				if y > s.Max.Y-2 {
 					y = s.Max.Y - 2
 				}
-			} else if but == 3 || but == 5 {
+			case down:
 				p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
 				rt := scrpos(l.scroll, p0, p0+l.f.NumChars, tot)
 				y = rt.Min.Y
@@ -161,24 +165,34 @@ func scroll(l *Flayer, but int) {
 			break
 		}
 	}
+
 	if but > 3 || in {
 		h := s.Max.Y - s.Min.Y
 		scrunmark(l, r)
 		p0 = 0
-		if but == 1 || but == 4 {
+		switch {
+		case up:
 			but = 1
-			p0 = int(my-s.Min.Y)/l.f.Font.Height + 1
-		} else if but == 2 {
+			if !in {
+				p0 = 2
+			} else {
+				p0 = int(my-s.Min.Y)/l.f.Font.Height + 1
+			}
+		case exact:
 			if tot > 1024*1024 {
 				p0 = ((tot >> 10) * (y - s.Min.Y) / h) << 10
 			} else {
 				p0 = tot * (y - s.Min.Y) / h
 			}
-		} else if but == 3 || but == 5 {
+		case down:
 			but = 3
-			p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
-			if p0 > tot {
-				p0 = tot
+			if !in {
+				p0 = nextln(l.text, l.origin)
+			} else {
+				p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
+				if p0 > tot {
+					p0 = tot
+				}
 			}
 		}
 		scrorigin(l, but, p0)
@@ -277,4 +291,51 @@ func scrlfl(l *Flayer, dl int) {
 	}
 
 	scrorigin(l, func() int { if up { return 1 }; return 3 }(), p0)
+}
+
+func nextln(t *Text, a0 int) int {
+	if a0 < t.rasp.nrunes {
+		count := 0
+		p0 := a0
+		for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
+			a0--
+			count++
+		}
+		a0 = p0
+		for a0 < t.rasp.nrunes && raspc(&t.rasp, a0) != '\n' {
+			a0++
+		}
+		if a0 < t.rasp.nrunes {
+			a0++
+			for a0 < t.rasp.nrunes && count > 0 && raspc(&t.rasp, a0) != '\n' {
+				a0++
+				count--
+			}
+		}
+	}
+	return a0
+}
+
+func prevln(t *Text, a0 int) int {
+	if a0 > 0 {
+		n0, n1, count := 0, 0, 0
+		for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
+			a0--
+			count++
+		}
+		if a0 > 0 {
+			n1 = a0
+			a0--
+			for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
+				a0--
+			}
+			n0 = a0
+			if n0+count >= n1 {
+				a0 = n1 - 1
+			} else {
+				a0 = n0 + count
+			}
+		}
+	}
+	return a0
 }
