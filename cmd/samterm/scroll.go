@@ -201,14 +201,11 @@ func scrsleep(dt int) {
 }
 
 func scrollf(f *frame.Frame, dl int) {
-	
 	if f != &which.f {
 		panic("wrong frame for scroll")
 	}
-
-	debug("SCROLLF: pt=%d up=%t down=%t\n", dl, dl > 0, dl < 0)
-
 	scrlfl(which, dl)
+	mousectl.Read()
 }
 
 func scrlfl(l *Flayer, dl int) {
@@ -224,6 +221,8 @@ func scrlfl(l *Flayer, dl int) {
 	} else {
 		down = true
 	}
+
+	debug("scrlfl: dl=%d up=%t down=%t\n", dl, up, down)
 
 	tot := scrtotal(l)
 	s := l.scroll
@@ -247,6 +246,9 @@ func scrlfl(l *Flayer, dl int) {
 	if my >= s.Max.Y {
 		my = s.Max.Y
 	}
+
+	debug("scrlfl: p0=%d p1=%d tot=%d scr=%+v mousept=%+v\n",
+		p0, p0+l.f.NumChars, tot, scr, mousep.Point)
 
 	if up {
 		p0 = l.origin - l.f.CharOf(image.Pt(s.Max.X, my))

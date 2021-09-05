@@ -385,10 +385,12 @@ func scrorigin(l *Flayer, but int, p0 int) {
 	// 1=up, 3=down
 	switch but {
 	case 1:
+		debug("scrolling up\n")
 		outTsll(mesg.Torigin, t.tag, l.origin, p0)
 	case 2:
 		outTsll(mesg.Torigin, t.tag, p0, 1)
 	case 3:
+		debug("scrolling down\n")
 		horigin(t.tag, p0)
 	}
 }
