@@ -48,6 +48,7 @@ const (
 	Tindent
 	Tunindent
 	Tcomment
+	Tlog
 	TMAX
 )
 

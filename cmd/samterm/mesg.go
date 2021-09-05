@@ -476,6 +476,12 @@ func outTslS(typ mesg.Tmesg, s1 int, l1 int, s []rune) {
 	outsend()
 }
 
+func outTS(typ mesg.Tmesg, s []rune) {
+	outstart(typ)
+	outrunes(s)
+	outsend()
+}
+
 func outTsls(typ mesg.Tmesg, s1 int, l1 int, s2 int) {
 	outstart(typ)
 	outshort(s1)
