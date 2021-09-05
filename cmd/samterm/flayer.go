@@ -6,6 +6,7 @@ import (
 
 	"github.com/dnjp/9fans/draw"
 	"github.com/dnjp/9fans/draw/frame"
+	"github.com/dnjp/sam/mesg"
 )
 
 var llist []*Flayer /* front to back */
@@ -17,7 +18,37 @@ var cmdcols [frame.NCOL]*draw.Image
 var clickcount int
 var clickpt image.Point = image.Pt(-10, -10)
 
-func flstart(r image.Rectangle) {
+type Vis int
+
+const (
+	None Vis = 0 + iota
+	Some
+	All
+)
+
+const (
+	Clicktime = 500 // millisecond
+)
+
+type Flayer struct {
+	f       frame.Frame
+	origin  int
+	p0      int
+	p1      int
+	click   uint32
+	textfn  func(*Flayer, int) []rune
+	text    *Text
+	entire  image.Rectangle
+	scroll  image.Rectangle
+	lastsr  image.Rectangle
+	visible Vis
+}
+
+func FLMARGIN(l *Flayer) int    { return l.Scale(2) }
+func FLSCROLLWID(l *Flayer) int { return l.Scale(12) }
+func FLGAP(l *Flayer) int       { return l.Scale(4) }
+
+func FlayerStart(r image.Rectangle) {
 	lDrect = r
 
 	/* Main text is yellowish */
@@ -35,14 +66,14 @@ func flstart(r image.Rectangle) {
 	cmdcols[frame.HTEXT] = display.Black
 }
 
-func flnew(l *Flayer, fn func(*Flayer, int) []rune, text *Text) {
+func (l *Flayer) New(fn func(*Flayer, int) []rune, text *Text) {
 	l.textfn = fn
 	l.text = text
 	l.lastsr = draw.ZR
-	llinsert(l)
+	InsertFlayer(l)
 }
 
-func flrect(l *Flayer, r image.Rectangle) image.Rectangle {
+func (l *Flayer) Rect(r image.Rectangle) image.Rectangle {
 	draw.RectClip(&r, lDrect)
 	l.entire = r
 	l.scroll = r.Inset(FLMARGIN(l))
@@ -51,25 +82,25 @@ func flrect(l *Flayer, r image.Rectangle) image.Rectangle {
 	return r
 }
 
-func flinit(l *Flayer, r image.Rectangle, ft *draw.Font, cols []*draw.Image) {
-	lldelete(l)
-	llinsert(l)
+func (l *Flayer) Init(r image.Rectangle, ft *draw.Font, cols []*draw.Image) {
+	DeleteFlayer(l)
+	InsertFlayer(l)
 	l.visible = All
 	l.p1 = 0
 	l.p0 = l.p1
 	l.origin = l.p0
 	l.f.Display = display // for FLMARGIN
 	l.f.Scroll = scrollf
-	l.f.Init(flrect(l, r).Inset(FLMARGIN(l)), ft, screen, cols)
+	l.f.Init(l.Rect(r).Inset(FLMARGIN(l)), ft, screen, cols)
 	l.f.MaxTab = maxtab * ft.StringWidth("0")
 	l.text.tabexpand = false
 	newvisibilities(true)
 	screen.Draw(l.entire, l.f.Cols[frame.BACK], nil, draw.ZP)
 	scrdraw(l, 0)
-	flborder(l, false)
+	l.Border(false)
 }
 
-func flclose(l *Flayer) {
+func (l *Flayer) Close() {
 	if l.visible == All {
 		screen.Draw(l.entire, display.White, nil, draw.ZP)
 	} else if l.visible == Some {
@@ -78,11 +109,11 @@ func flclose(l *Flayer) {
 		}
 		if l.f.B != nil {
 			l.f.B.Draw(l.entire, display.White, nil, draw.ZP)
-			flrefresh(l, l.entire, 0)
+			l.Refresh(l.entire, 0)
 		}
 	}
 	l.f.Clear(true)
-	lldelete(l)
+	DeleteFlayer(l)
 	if l.f.B != nil && l.visible != All {
 		l.f.B.Free()
 	}
@@ -90,8 +121,8 @@ func flclose(l *Flayer) {
 	newvisibilities(true)
 }
 
-func flborder(l *Flayer, wide bool) {
-	if flprepare(l) {
+func (l *Flayer) Border(wide bool) {
+	if l.Prepare() {
 		l.f.B.Border(l.entire, FLMARGIN(l), l.f.Cols[frame.BACK], draw.ZP)
 		w := 1
 		if wide {
@@ -99,12 +130,12 @@ func flborder(l *Flayer, wide bool) {
 		}
 		l.f.B.Border(l.entire, w, l.f.Cols[frame.BORD], draw.ZP)
 		if l.visible == Some {
-			flrefresh(l, l.entire, 0)
+			l.Refresh(l.entire, 0)
 		}
 	}
 }
 
-func flwhich(p image.Point) *Flayer {
+func WhichFlayer(p image.Point) *Flayer {
 	if p.X == 0 && p.Y == 0 {
 		if len(llist) > 0 {
 			return llist[0]
@@ -119,22 +150,22 @@ func flwhich(p image.Point) *Flayer {
 	return nil
 }
 
-func flupfront(l *Flayer) {
+func (l *Flayer) UpFront() {
 	v := l.visible
-	lldelete(l)
-	llinsert(l)
+	DeleteFlayer(l)
+	InsertFlayer(l)
 	if v != All {
 		newvisibilities(false)
 	}
 }
 
 func newvisibilities(redraw bool) {
-	/* if redraw false, we know it's a flupfront, and needn't
+	/* if redraw false, we know it's a UpFront, and needn't
 	 * redraw anyone becoming partially covered */
 	for _, l := range llist {
 		l.lastsr = draw.ZR /* make sure scroll bar gets redrawn */
 		ov := l.visible
-		l.visible = visibility(l)
+		l.visible = l.Visibility()
 		V := func(a, b Vis) int { return int(a)<<2 | int(b) }
 		switch V(ov, l.visible) {
 		case V(Some, None):
@@ -150,10 +181,10 @@ func newvisibilities(redraw bool) {
 		case V(Some, Some),
 			V(None, Some):
 			if ov == None || (l.f.B == nil && redraw) {
-				flprepare(l)
+				l.Prepare()
 			}
 			if l.f.B != nil && redraw {
-				flrefresh(l, l.entire, 0)
+				l.Refresh(l.entire, 0)
 				l.f.B.Free()
 				l.f.B = nil
 				l.f.Clear(false)
@@ -172,21 +203,21 @@ func newvisibilities(redraw bool) {
 			}
 			fallthrough
 		case V(None, All):
-			flprepare(l)
+			l.Prepare()
 		}
 		if ov == None && l.visible != None {
-			flnewlyvisible(l)
+			Newlyvisible(l)
 		}
 	}
 }
 
-func llinsert(l *Flayer) {
+func InsertFlayer(l *Flayer) {
 	llist = append(llist, nil)
 	copy(llist[1:], llist)
 	llist[0] = l
 }
 
-func lldelete(l *Flayer) {
+func DeleteFlayer(l *Flayer) {
 	for i := range llist {
 		if llist[i] == l {
 			copy(llist[i:], llist[i+1:])
@@ -194,21 +225,21 @@ func lldelete(l *Flayer) {
 			return
 		}
 	}
-	panic("lldelete")
+	panic("DeleteFlayer")
 }
 
-func flinsert(l *Flayer, rp []rune, p0 int) {
-	if flprepare(l) {
+func (l *Flayer) Insert(rp []rune, p0 int) {
+	if l.Prepare() {
 		l.f.Insert(rp, p0-l.origin)
 		scrdraw(l, scrtotal(l))
 		if l.visible == Some {
-			flrefresh(l, l.entire, 0)
+			l.Refresh(l.entire, 0)
 		}
 	}
 }
 
-func fldelete(l *Flayer, p0 int, p1 int) {
-	if flprepare(l) {
+func (l *Flayer) Delete(p0 int, p1 int) {
+	if l.Prepare() {
 		p0 -= l.origin
 		if p0 < 0 {
 			p0 = 0
@@ -220,14 +251,14 @@ func fldelete(l *Flayer, p0 int, p1 int) {
 		l.f.Delete(p0, p1)
 		scrdraw(l, scrtotal(l))
 		if l.visible == Some {
-			flrefresh(l, l.entire, 0)
+			l.Refresh(l.entire, 0)
 		}
 	}
 }
 
-func flselect(l *Flayer) int {
+func (l *Flayer) Select() int {
 	if l.visible != All {
-		flupfront(l)
+		l.UpFront()
 	}
 	dt := int(mousep.Msec - l.click)
 	dx := int(math.Abs(float64(mousep.Point.X - clickpt.X)))
@@ -239,29 +270,58 @@ func flselect(l *Flayer) int {
 		clickcount++
 		return clickcount
 	}
-	clickcount = 0
 
-	// TODO(dnjp): This blocks until the selection is completed.
-	// in order to scroll while selecting, frame.Scroll needs
-	// to be implemented.
-	l.f.Select(mousectl)
-	l.p0 = l.f.P0 + l.origin
-	l.p1 = l.f.P1 + l.origin
+	clickcount = 0
+	scrolled = false
+	scrolling = false
+	done := make(chan struct{})
+
+	go func(done chan struct{}) {
+		l.f.Select(mousectl)
+		l.p0 = l.f.P0 + l.origin
+		l.p1 = l.f.P1 + l.origin
+		if scrolled {
+			l.SetSelect(scrp0, scrp1)
+			outTsll(mesg.Tsetdot, l.text.tag, l.f.P0, l.f.P1)
+		}
+		// reset scrolling state
+		scrolled = false
+		scrolling = false
+		scrollsent = false
+		scrp0 = 0
+		scrp1 = 0
+		scrpt = nil
+		done <- struct{}{}
+	}(done)
+
+	select {
+	case <-done:
+	case <-scrollstart:
+	}
 	return 0
 }
 
-func flsetselect(l *Flayer, p0 int, p1 int) {
-	if l.visible == None || !flprepare(l) {
+func (l *Flayer) SetSelect(p0 int, p1 int) {
+	var fp0, fp1 int
+	var ticked bool
+
+	if l.visible == None || !l.Prepare() {
 		l.p0 = p0
 		l.p1 = p1
 		return
 	}
+
 	l.p0 = p0
 	l.p1 = p1
-	var fp0 int
-	var fp1 int
-	var ticked bool
-	flfp0p1(l, &fp0, &fp1, &ticked)
+	if scrolling {
+		fp0 = l.p0
+		fp1 = l.p1
+		ticked = l.f.Ticked
+		goto Refresh
+	}
+
+	fp0, fp1, ticked = l.flfp0p1()
+
 	if fp0 == l.f.P0 && fp1 == l.f.P1 {
 		if l.f.Ticked != ticked {
 			l.f.Tick(l.f.PointOf(fp0), ticked)
@@ -296,18 +356,29 @@ func flsetselect(l *Flayer, p0 int, p1 int) {
 Refresh:
 	l.f.P0 = fp0
 	l.f.P1 = fp1
+
+	if scrolling && scrpt != nil {
+		*scrpt = l.f.CharOf(mousectl.Point)
+		if scrpt == &scrp1 {
+			l.f.P1 = *scrpt + l.origin
+		}
+		if scrpt == &scrp0 {
+			l.f.P0 = *scrpt + l.origin
+		}
+	}
+
 	if l.visible == Some {
-		flrefresh(l, l.entire, 0)
+		l.Refresh(l.entire, 0)
 	}
 }
 
-func flfp0p1(l *Flayer, pp0 *int, pp1 *int, ticked *bool) {
-	p0 := l.p0 - l.origin
-	p1 := l.p1 - l.origin
+func (l *Flayer) flfp0p1() (p0 int, p1 int, ticked bool) {
+	p0 = l.p0 - l.origin
+	p1 = l.p1 - l.origin
+	ticked = p0 == p1
 
-	*ticked = p0 == p1
 	if p0 < 0 {
-		*ticked = false
+		ticked = false
 		p0 = 0
 	}
 	if p1 < 0 {
@@ -317,11 +388,11 @@ func flfp0p1(l *Flayer, pp0 *int, pp1 *int, ticked *bool) {
 		p0 = l.f.NumChars
 	}
 	if p1 > l.f.NumChars {
-		*ticked = false
+		ticked = false
 		p1 = l.f.NumChars
 	}
-	*pp0 = p0
-	*pp1 = p1
+
+	return p0, p1, ticked
 }
 
 func rscale(r image.Rectangle, old image.Point, new image.Point) image.Rectangle {
@@ -332,7 +403,7 @@ func rscale(r image.Rectangle, old image.Point, new image.Point) image.Rectangle
 	return r
 }
 
-func flresize(dr image.Rectangle) {
+func ResizeFlayer(dr image.Rectangle) {
 	olDrect := lDrect
 	lDrect = dr
 	move := false
@@ -360,7 +431,7 @@ func flresize(dr image.Rectangle) {
 			}
 		}
 		if !draw.RectClip(&r, dr) {
-			panic("flresize")
+			panic("ResizeFlayer")
 		}
 		if r.Max.X-r.Min.X < 100 {
 			r.Min.X = dr.Min.X
@@ -377,7 +448,7 @@ func flresize(dr image.Rectangle) {
 		if !move {
 			l.visible = None
 		}
-		f.SetRects(flrect(l, r).Inset(FLMARGIN(l)), f.B)
+		f.SetRects(l.Rect(r).Inset(FLMARGIN(l)), f.B)
 		if !move && f.B != nil {
 			scrdraw(l, scrtotal(l))
 		}
@@ -385,7 +456,7 @@ func flresize(dr image.Rectangle) {
 	newvisibilities(true)
 }
 
-func flprepare(l *Flayer) bool {
+func (l *Flayer) Prepare() bool {
 	if l.visible == None {
 		return false
 	}
@@ -412,7 +483,7 @@ func flprepare(l *Flayer) bool {
 		f.Insert(rp, 0)
 		f.Drawsel(f.PointOf(f.P0), f.P0, f.P1, false)
 		var ticked bool
-		flfp0p1(l, &f.P0, &f.P1, &ticked)
+		f.P0, f.P1, ticked = l.flfp0p1()
 		if f.P0 != f.P1 || ticked {
 			f.Drawsel(f.PointOf(f.P0), f.P0, f.P1, true)
 		}
@@ -424,11 +495,11 @@ func flprepare(l *Flayer) bool {
 
 var somevis, someinvis, justvis bool
 
-func visibility(l *Flayer) Vis {
+func (l *Flayer) Visibility() Vis {
 	someinvis = false
 	somevis = someinvis
 	justvis = true
-	flrefresh(l, l.entire, 0)
+	l.Refresh(l.entire, 0)
 	justvis = false
 	if !somevis {
 		return None
@@ -439,7 +510,7 @@ func visibility(l *Flayer) Vis {
 	return Some
 }
 
-func flrefresh(l *Flayer, r image.Rectangle, i int) {
+func (l *Flayer) Refresh(r image.Rectangle, i int) {
 Top:
 	t := llist[i]
 	i++
@@ -456,25 +527,25 @@ Top:
 		if t.entire.Min.X > r.Min.X {
 			s = r
 			s.Max.X = t.entire.Min.X
-			flrefresh(l, s, i)
+			l.Refresh(s, i)
 			r.Min.X = t.entire.Min.X
 		}
 		if t.entire.Min.Y > r.Min.Y {
 			s = r
 			s.Max.Y = t.entire.Min.Y
-			flrefresh(l, s, i)
+			l.Refresh(s, i)
 			r.Min.Y = t.entire.Min.Y
 		}
 		if t.entire.Max.X < r.Max.X {
 			s = r
 			s.Min.X = t.entire.Max.X
-			flrefresh(l, s, i)
+			l.Refresh(s, i)
 			r.Max.X = t.entire.Max.X
 		}
 		if t.entire.Max.Y < r.Max.Y {
 			s = r
 			s.Min.Y = t.entire.Max.Y
-			flrefresh(l, s, i)
+			l.Refresh(s, i)
 			r.Max.Y = t.entire.Max.Y
 		}
 		/* remaining piece of r is blocked by t; forget about it */
@@ -482,14 +553,14 @@ Top:
 	}
 }
 
-func flscale(l *Flayer, n int) int {
+func (l *Flayer) Scale(n int) int {
 	if l == nil {
 		return n
 	}
 	return l.f.Display.ScaleSize(n)
 }
 
-func flinlist(l *Flayer) bool {
+func FlayerInList(l *Flayer) bool {
 	for _, fl := range llist {
 		if l == fl {
 			return true

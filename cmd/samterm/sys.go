@@ -19,13 +19,14 @@ import (
 var exname string
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: samterm -a -W winsize\n")
+	fmt.Fprintf(os.Stderr, "usage: samterm -a -D -W winsize\n")
 	os.Exit(2)
 }
 
 func getscreen() {
 	flag.BoolVar(&autoindent, "a", autoindent, "enable autoindent")
 	winsize := flag.String("W", "", "set initial window `size`")
+	flag.BoolVar(&debugenabled, "D", false, "enable debug mode")
 	log.SetPrefix("samterm: ")
 	log.SetFlags(0)
 	flag.Usage = usage

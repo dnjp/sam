@@ -29,67 +29,6 @@ var outbuffered bool
 var tversion int
 var journal_file *os.File
 
-var hname = [26]string{
-	mesg.Hversion:    "Hversion",
-	mesg.Hbindname:   "Hbindname",
-	mesg.Hcurrent:    "Hcurrent",
-	mesg.Hnewname:    "Hnewname",
-	mesg.Hmovname:    "Hmovname",
-	mesg.Hgrow:       "Hgrow",
-	mesg.Hcheck0:     "Hcheck0",
-	mesg.Hcheck:      "Hcheck",
-	mesg.Hunlock:     "Hunlock",
-	mesg.Hdata:       "Hdata",
-	mesg.Horigin:     "Horigin",
-	mesg.Hunlockfile: "Hunlockfile",
-	mesg.Hsetdot:     "Hsetdot",
-	mesg.Hgrowdata:   "Hgrowdata",
-	mesg.Hmoveto:     "Hmoveto",
-	mesg.Hclean:      "Hclean",
-	mesg.Hdirty:      "Hdirty",
-	mesg.Hcut:        "Hcut",
-	mesg.Hsetpat:     "Hsetpat",
-	mesg.Hdelname:    "Hdelname",
-	mesg.Hclose:      "Hclose",
-	mesg.Hsetsnarf:   "Hsetsnarf",
-	mesg.Hsnarflen:   "Hsnarflen",
-	mesg.Hack:        "Hack",
-	mesg.Hexit:       "Hexit",
-	mesg.Hplumb:      "Hplumb",
-}
-
-var tname = [29]string{
-	mesg.Tversion:      "Tversion",
-	mesg.Tstartcmdfile: "Tstartcmdfile",
-	mesg.Tcheck:        "Tcheck",
-	mesg.Trequest:      "Trequest",
-	mesg.Torigin:       "Torigin",
-	mesg.Tstartfile:    "Tstartfile",
-	mesg.Tworkfile:     "Tworkfile",
-	mesg.Ttype:         "Ttype",
-	mesg.Tcut:          "Tcut",
-	mesg.Tpaste:        "Tpaste",
-	mesg.Tsnarf:        "Tsnarf",
-	mesg.Tstartnewfile: "Tstartnewfile",
-	mesg.Twrite:        "Twrite",
-	mesg.Tclose:        "Tclose",
-	mesg.Tlook:         "Tlook",
-	mesg.Tsearch:       "Tsearch",
-	mesg.Tsend:         "Tsend",
-	mesg.Tdclick:       "Tdclick",
-	mesg.Tstartsnarf:   "Tstartsnarf",
-	mesg.Tsetsnarf:     "Tsetsnarf",
-	mesg.Tack:          "Tack",
-	mesg.Texit:         "Texit",
-	mesg.Tplumb:        "Tplumb",
-	mesg.Ttclick:       "Ttclick",
-	mesg.Tundo:         "Tundo",
-	mesg.Tindent:       "Tindent",
-	mesg.Tunindent:     "Tunindent",
-	mesg.Tcomment:      "Tcomment",
-	mesg.Tlog:          "Tlog",
-}
-
 /*
 // #ifdef DEBUG
 
@@ -199,12 +138,12 @@ func whichfile(tag int) *File {
 }
 
 func inmesg(type_ mesg.Tmesg) bool {
-	debug("inmesg %v %x\n", type_, indata)
+	// debug("inmesg %v %x\n", type_, indata)
 	if type_ > mesg.TMAX {
 		panic_("inmesg")
 	}
 
-	journal(0, tname[type_])
+	journal(0, mesg.Tname(type_))
 
 	inp = indata
 	var buf [1025]rune
@@ -220,7 +159,7 @@ func inmesg(type_ mesg.Tmesg) bool {
 	var p Posn
 	var r Range
 	var str *String
-	debug("EV TYPE: %d %s", type_, tname[type_])
+	debug("EV TYPE: %d %s", type_, mesg.Tname(type_))
 	switch type_ {
 	case -1:
 		panic_("rcv error")
@@ -484,6 +423,15 @@ func inmesg(type_ mesg.Tmesg) bool {
 	case mesg.Tlog:
 		dat := inrunes(0)
 		debug("samterm: " + string(dat))
+
+	case mesg.Tsetdot:
+		s = inshort()
+		l = inlong()
+		l1 = inlong()
+		f := whichfile(s)
+		f.dot.r.p1 = l
+		f.dot.r.p2 = l1
+		telldot(f)
 
 	case mesg.Tstartnewfile:
 		v = invlong()

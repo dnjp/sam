@@ -13,30 +13,29 @@ import (
 )
 
 var (
-	cmd         Text
-	cursor      *draw.Cursor
-	which       *Flayer
-	work        *Flayer
-	snarflen    int
-	typestart   int  = -1
-	typeend     int  = -1
-	typeesc     int  = -1
-	modified    bool /* strange lookahead for menus */
-	hostlock    int  = 1
-	hasunlocked bool
-	maxtab      int = 8
-	chord       int
-	autoindent  bool
-	display     *draw.Display
-	screen      *draw.Image
-	font        *draw.Font
-	textID      int64
-	textByID    map[int64]*Text
+	cmd          Text
+	cursor       *draw.Cursor
+	which        *Flayer
+	work         *Flayer
+	snarflen     int
+	typestart    int  = -1
+	typeend      int  = -1
+	typeesc      int  = -1
+	modified     bool /* strange lookahead for menus */
+	hostlock     int  = 1
+	hasunlocked  bool
+	maxtab       int = 8
+	chord        int
+	autoindent   bool
+	debugenabled bool
+	display      *draw.Display
+	screen       *draw.Image
+	font         *draw.Font
+	textID       int64
+	textByID     map[int64]*Text
 )
 
 const chording = true /* code here for reference but it causes deadlocks */
-
-var hasb1 bool
 
 func main() {
 	/*
@@ -70,12 +69,12 @@ func main() {
 	r := screen.R
 	r.Max.Y = r.Min.Y + r.Dy()/5
 	if protodebug {
-		print("flstart\n")
+		print("FlayerStart\n")
 	}
-	flstart(screen.Clipr)
+	FlayerStart(screen.Clipr)
 	rinit(&cmd.rasp)
-	flnew(&cmd.l[0], gettext, &cmd)
-	flinit(&cmd.l[0], r, font, cmdcols[:])
+	(&cmd.l[0]).New(gettext, &cmd)
+	(&cmd.l[0]).Init(r, font, cmdcols[:])
 	textID++
 	cmd.id = textID
 	textByID = make(map[int64]*Text)
@@ -102,8 +101,7 @@ func main() {
 			for i = 0; cmd.l[i].textfn == nil; i++ {
 			}
 			current(&cmd.l[i])
-			debug("RPLUMB (flsetselect)\n")
-			flsetselect(which, cmd.rasp.nrunes, cmd.rasp.nrunes)
+			which.SetSelect(cmd.rasp.nrunes, cmd.rasp.nrunes)
 			ktype(which, RPlumb)
 		}
 		if got&(1<<RKeyboard) != 0 {
@@ -115,22 +113,16 @@ func main() {
 		}
 		if got&(1<<RMouse) != 0 {
 			if hostlock == 2 || !mousep.Point.In(screen.R) {
-				debug("continuing\n")
 				mouseunblock()
 				continue
 			}
-			nwhich := flwhich(mousep.Point)
+			nwhich := WhichFlayer(mousep.Point)
 			scr := which != nil && mousep.Point.In(which.scroll)
 			scr = which != nil && (mousep.Point.In(which.scroll)) ||
 				mousep.Buttons&(8|16) != 0
-			
-			// TODO: remove
-			hasb1 = mousep.Buttons == 1
-			
 			if mousep.Buttons != 0 {
 				flushtyping(true)
 			}
-			// debug("scr=%t chord=%d buttons=%d\n", scr, chord, mousep.Buttons)
 			if chording && chord == 1 && mousep.Buttons == 0 {
 				chord = 0
 			}
@@ -149,20 +141,21 @@ func main() {
 						}())
 					} else {
 						t := which.text
-						nclick := flselect(which)
+						nclick := which.Select()
 						if nclick > 0 {
 							if nclick > 1 {
 								outTsl(mesg.Ttclick, t.tag, which.p0)
-								t.lock++
+								t.Lock()
 							} else {
 								outTsl(mesg.Tdclick, t.tag, which.p0)
-								t.lock++
+								t.Lock()
 							}
 						} else if t != &cmd {
 							outcmd()
 						}
 						if mousep.Buttons&1 != 0 {
 							chord = mousep.Buttons
+							debug("chord=%d\n", chord)
 						}
 					}
 				}
@@ -188,7 +181,7 @@ func main() {
 		}
 		if chording && chord != 0 {
 			t := which.text
-			if t.lock == 0 && hostlock == 0 {
+			if !t.Locked() && hostlock == 0 {
 				w := t.find(which)
 				if chord&2 != 0 {
 					cut(t, w, true, true)
@@ -211,7 +204,7 @@ func (t *Text) find(l *Flayer) int {
 }
 
 func resize() {
-	flresize(screen.Clipr)
+	ResizeFlayer(screen.Clipr)
 	for _, t := range text {
 		if t != nil {
 			hcheck(t.tag)
@@ -221,12 +214,12 @@ func resize() {
 
 func current(nw *Flayer) {
 	if which != nil {
-		flborder(which, false)
+		which.Border(false)
 	}
 	if nw != nil {
 		flushtyping(true)
-		flupfront(nw)
-		flborder(nw, true)
+		nw.UpFront()
+		nw.Border(true)
 		buttons(Up)
 		t := nw.text
 		t.front = t.find(nw)
@@ -243,10 +236,10 @@ func closeup(l *Flayer) {
 	if m < 0 {
 		return
 	}
-	flclose(l)
+	l.Close()
 	if l == which {
 		which = nil
-		current(flwhich(image.Pt(0, 0)))
+		current(WhichFlayer(image.Pt(0, 0)))
 	}
 	if l == work {
 		work = nil
@@ -281,15 +274,14 @@ func duplicate(l *Flayer, r image.Rectangle, f *draw.Font, close bool) {
 	t := l.text
 	nl := findl(t)
 	if nl != nil {
-		flnew(nl, gettext, t)
-		flinit(nl, r, f, l.f.Cols[:])
+		nl.New(gettext, t)
+		nl.Init(r, f, l.f.Cols[:])
 		nl.origin = l.origin
 		rp := l.textfn(l, l.f.NumChars)
-		flinsert(nl, rp, l.origin)
-		debug("DUPLICATE (flsetselect)\n")
-		flsetselect(nl, l.p0, l.p1)
+		nl.Insert(rp, l.origin)
+		nl.SetSelect(l.p0, l.p1)
 		if close {
-			flclose(l)
+			l.Close()
 			if l == which {
 				which = nil
 			}
@@ -353,9 +345,8 @@ func cut(t *Text, w int, save bool, check bool) {
 		snarf(t, w)
 	}
 	outTsll(mesg.Tcut, t.tag, p0, p1)
-	debug("CUT (flsetselect)\n")
-	flsetselect(l, p0, p0)
-	t.lock++
+	l.SetSelect(p0, p0)
+	t.Lock()
 	hcut(t.tag, p0, p1-p0)
 	if check {
 		hcheck(t.tag)
@@ -370,28 +361,8 @@ func paste(t *Text, w int) {
 	sendsnarf(b)
 	if len(b) != 0 {
 		cut(t, w, false, false)
-		t.lock++
+		t.Lock()
 		outTsl(mesg.Tpaste, t.tag, t.l[w].p0)
-	}
-}
-
-func scrorigin(l *Flayer, but int, p0 int) {
-	t := l.text
-
-	if t.tag == Untagged {
-		return
-	}
-
-	// 1=up, 3=down
-	switch but {
-	case 1:
-		debug("scrolling up\n")
-		outTsll(mesg.Torigin, t.tag, l.origin, p0)
-	case 2:
-		outTsll(mesg.Torigin, t.tag, p0, 1)
-	case 3:
-		debug("scrolling down\n")
-		horigin(t.tag, p0)
 	}
 }
 
@@ -550,7 +521,7 @@ func kout(l *Flayer, t *Text, a int, atnl bool, in []rune) {
 	// grows rasp and inserts the data between a:len(kinput) into the
 	// rasp (retrieved from the host)
 	hgrow(t.tag, a, len(in), 0)
-	t.lock++                // pretend we Trequest'ed for hdatarune
+	t.Lock()                // pretend we Trequest'ed for hdatarune
 	hdatarune(t.tag, a, in) // insert a:len(kinput) into rasp
 	a += len(in)
 	l.p0 = a
@@ -630,7 +601,7 @@ func ktype(l *Flayer, res Resource) {
 		scrollkey = nontypingkey(c)
 	}
 
-	if hostlock != 0 || t.lock != 0 {
+	if hostlock != 0 || t.Locked() {
 		kbdblock()
 		return
 	}
@@ -692,7 +663,7 @@ Out:
 		if l.p1 > l.p0 {
 			flushtyping(false)
 			cut(t, t.front, true, false)
-			t.lock++
+			t.Lock()
 			if c == UNINDENT {
 				outTsl(mesg.Tunindent, t.tag, l.p0)
 			} else {
@@ -704,7 +675,7 @@ Out:
 	case COMMENT:
 		flushtyping(false)
 		cut(t, t.front, true, false)
-		t.lock++
+		t.Lock()
 		outTsl(mesg.Tcomment, t.tag, l.p0)
 	case SCROLLKEY, PAGEDOWN:
 		flushtyping(false)
@@ -722,7 +693,7 @@ Out:
 		if a0 < t.rasp.nrunes {
 			a0++
 		}
-		flsetselect(l, a0, a0)
+		l.SetSelect(a0, a0)
 		center(l, a0)
 	case LEFTARROW, BACKC:
 		flushtyping(false)
@@ -730,22 +701,22 @@ Out:
 		if a0 > 0 {
 			a0--
 		}
-		flsetselect(l, a0, a0)
+		l.SetSelect(a0, a0)
 		center(l, a0)
 	case UPC:
-		flsetselect(l, l.p0, l.p0)
+		l.SetSelect(l.p0, l.p0)
 		flushtyping(true)
-		a0 := prevln(t, l.p0)
+		a0 := t.MoveUp(l.p0)
 		if a0 > 0 {
-			flsetselect(l, a0, a0)
+			l.SetSelect(a0, a0)
 			center(l, a0)
 		}
 	case DOWNC:
-		flsetselect(l, l.p0, l.p0)
+		l.SetSelect(l.p0, l.p0)
 		flushtyping(true)
-		a0 := nextln(t, l.p0)
+		a0 := t.MoveDown(l.p0)
 		if a0 != l.p0 {
-			flsetselect(l, a0, a0)
+			l.SetSelect(a0, a0)
 			center(l, a0)
 		}
 	case HOMEKEY:
@@ -770,7 +741,7 @@ Out:
 		for i := 0; i < NL; i++ {
 			l := &t.l[i]
 			if l.textfn != nil {
-				flsetselect(l, l.p0, l.p1)
+				l.SetSelect(l.p0, l.p1)
 			}
 		}
 	case UNDO:
@@ -793,7 +764,7 @@ Out:
 				if l.p1 != l.p0 {
 					/* cut locally if possible */
 					if typestart <= l.p0 && l.p1 <= typeend {
-						t.lock++ /* to call hcut */
+						t.Lock() /* to call hcut */
 						hcut(t.tag, l.p0, l.p1-l.p0)
 						/* hcheck is local because we know rasp is contiguous */
 						hcheck(t.tag)
@@ -827,7 +798,7 @@ Out:
 			for i := 0; i < NL; i++ {
 				l := &t.l[i]
 				if l.textfn != nil {
-					flsetselect(l, l.p0, l.p1)
+					l.SetSelect(l.p0, l.p1)
 				}
 			}
 			switch c {
@@ -843,14 +814,14 @@ Out:
 			case BACK:
 				t = &cmd
 				for i := 0; i < len(t.l); i++ {
-					if flinlist(&t.l[i]) {
+					if FlayerInList(&t.l[i]) {
 						l = &t.l[i]
 					}
 				}
 				current(l)
 				flushtyping(false)
 				a = t.rasp.nrunes
-				flsetselect(l, a, a)
+				l.SetSelect(a, a)
 				center(l, a)
 			case LAST:
 				if work == nil {
@@ -895,5 +866,7 @@ func scrtotal(l *Flayer) int {
 }
 
 func debug(fmtstr string, args ...interface{}) {
-	outTS(mesg.Tlog, []rune(fmt.Sprintf(fmtstr, args...)))
+	if debugenabled {
+		outTS(mesg.Tlog, []rune(fmt.Sprintf(fmtstr, args...)))
+	}
 }

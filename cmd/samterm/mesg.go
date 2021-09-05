@@ -97,6 +97,7 @@ func whichtext(tg int) *Text {
 }
 
 func inmesg(typ mesg.Hmesg, count int) {
+	debug("EV TYPE: %d %s", typ, mesg.Hname(typ))
 	m := inshort(0)
 	l := inlong(2)
 	switch typ {
@@ -189,8 +190,8 @@ func inmesg(typ mesg.Hmesg, count int) {
 		}
 		lp := &t.l[t.front]
 		if isCmd {
-			flupfront(lp)
-			flborder(lp, false)
+			lp.UpFront()
+			lp.Border(false)
 			work = lp
 		} else {
 			current(lp)
@@ -235,7 +236,7 @@ func inmesg(typ mesg.Hmesg, count int) {
 		if i >= 0 {
 			t := text[i]
 			if t != nil {
-				t.lock++
+				t.Lock()
 			}
 			outTs(mesg.Tcheck, m)
 		}
@@ -244,8 +245,8 @@ func inmesg(typ mesg.Hmesg, count int) {
 		i := whichmenu(m)
 		if i >= 0 {
 			t := text[i]
-			if t != nil && t.lock != 0 {
-				t.lock--
+			if t != nil && t.Locked() {
+				t.Unlock()
 			}
 			hcheck(m)
 		}
@@ -267,8 +268,8 @@ func inmesg(typ mesg.Hmesg, count int) {
 	case mesg.Hunlockfile:
 		if whichmenu(m) >= 0 {
 			t := whichtext(m)
-			if t.lock != 0 {
-				t.lock--
+			if t.Locked() {
+				t.Unlock()
 				l = -1
 				goto Checkscroll
 			}
@@ -523,8 +524,13 @@ func outsend() {
 	}
 	outdata[1] = uint8(outcount)
 	outdata[2] = uint8(outcount >> 8)
-	if n, err := hostfd[1].Write(outdata[:outcount+HSIZE]); n != int(outcount+HSIZE) {
+	n, err := hostfd[1].Write(outdata[:outcount+HSIZE])
+	if err != nil {
 		panic("write error: " + err.Error())
+	}
+	if n != outcount+HSIZE {
+		fmt.Printf("outdata: %+v\n", outdata)
+		panic(fmt.Sprintf("write error: %d != %d", n, outcount+HSIZE))
 	}
 }
 
@@ -532,13 +538,13 @@ func hsetdot(m int, p0 int, p1 int) {
 	t := whichtext(m)
 	l := &t.l[t.front]
 	flushtyping(true)
-	flsetselect(l, p0, p1)
+	l.SetSelect(p0, p1)
 }
 
 func horigin(m int, p0 int) {
 	t := whichtext(m)
 	l := &t.l[t.front]
-	if !flprepare(l) {
+	if !l.Prepare() {
 		l.origin = p0
 		return
 	}
@@ -554,7 +560,7 @@ func horigin(m int, p0 int) {
 	l.origin = p0
 	scrdraw(l, t.rasp.nrunes)
 	if l.visible == Some {
-		flrefresh(l, l.entire, 0)
+		l.Refresh(l.entire, 0)
 	}
 	hcheck(m)
 }
@@ -579,7 +585,7 @@ func hcheck(m int) {
 	}
 	for i := 0; i < NL; i++ {
 		l := &t.l[i]
-		if l.textfn == nil || !flprepare(l) {
+		if l.textfn == nil || !l.Prepare() {
 			/* BUG: don't need this if BUG below is fixed */
 			// TODO(rsc): What BUG?
 			continue
@@ -605,7 +611,7 @@ func hcheck(m int) {
 			if n > 0 {
 				rp := rload(&t.rasp, a, a+n)
 				nl := l.f.NumChars
-				flinsert(l, rp, l.origin+nl)
+				l.Insert(rp, l.origin+nl)
 				if nl == l.f.NumChars { /* made no progress */
 					goto Checksel
 				}
@@ -619,16 +625,20 @@ func hcheck(m int) {
 			}
 			outTsls(mesg.Trequest, m, a, int(n))
 			outTs(mesg.Tcheck, m)
-			t.lock++ /* for the mesg.Trequest */
-			t.lock++ /* for the mesg.Tcheck */
+			t.Lock() /* for the mesg.Trequest */
+			t.Lock() /* for the mesg.Tcheck */
 			reqd = true
 		}
 	Checksel:
-		flsetselect(l, l.p0, l.p1)
+		if scrolling {
+			l.SetSelect(l.f.P0, l.f.P1)
+		} else {
+			l.SetSelect(l.p0, l.p1)
+		}
 	}
 }
 
-func flnewlyvisible(l *Flayer) {
+func Newlyvisible(l *Flayer) {
 	hcheck(l.text.tag)
 }
 
@@ -712,7 +722,7 @@ func hgrow(m int, a int, new int, req int) {
 			new = mesg.TBLOCKSIZE
 		}
 		outTsls(mesg.Trequest, m, a, new)
-		t.lock++
+		t.Lock()
 		req = 0
 	}
 }
@@ -729,7 +739,7 @@ func hdata1(t *Text, a int, rp []rune) int {
 		if a < o || (b > 0 && b > l.f.NumChars) {
 			continue
 		}
-		flinsert(l, rp, o+b)
+		l.Insert(rp, o+b)
 	}
 	rdata(&t.rasp, a, a+len(rp), rp)
 	rclean(&t.rasp)
@@ -738,8 +748,8 @@ func hdata1(t *Text, a int, rp []rune) int {
 
 func hdata(m int, a int, s []byte) int {
 	t := whichtext(m)
-	if t.lock != 0 {
-		t.lock--
+	if t.Locked() {
+		t.Unlock()
 	}
 	if len(s) == 0 {
 		return 0
@@ -750,8 +760,8 @@ func hdata(m int, a int, s []byte) int {
 
 func hdatarune(m int, a int, rp []rune) int {
 	t := whichtext(m)
-	if t.lock != 0 {
-		t.lock--
+	if t.Locked() {
+		t.Unlock()
 	}
 	if len(rp) == 0 {
 		return 0
@@ -761,8 +771,8 @@ func hdatarune(m int, a int, rp []rune) int {
 
 func hcut(m, a, old int) {
 	t := whichtext(m)
-	if t.lock != 0 {
-		t.lock--
+	if t.Locked() {
+		t.Unlock()
 	}
 	for i := 0; i < NL; i++ {
 		l := &t.l[i]
@@ -777,7 +787,7 @@ func hcut(m, a, old int) {
 			if b >= 0 {
 				p += b
 			}
-			fldelete(l, p, a+old-rmissing(&t.rasp, o, a+old))
+			l.Delete(p, a+old-rmissing(&t.rasp, o, a+old))
 		}
 		if a+old < o {
 			l.origin -= old
