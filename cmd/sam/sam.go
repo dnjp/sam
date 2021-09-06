@@ -83,6 +83,9 @@ func main() {
 	if Wflag != "" {
 		termargs = append(termargs, "-W", Wflag)
 	}
+	if Dflag {
+		termargs = append(termargs, "-D")
+	}
 
 	Strinit(&cmdstr)
 	Strinit0(&lastpat)

@@ -2,13 +2,34 @@ package main
 
 import (
 	"image"
+	"time"
 
 	"github.com/dnjp/9fans/draw"
 	"github.com/dnjp/9fans/draw/frame"
+	"github.com/dnjp/sam/mesg"
 )
 
-var scrtmp *draw.Image
-var scrback *draw.Image
+var (
+	scrtmp  *draw.Image
+	scrback *draw.Image
+	// true if the frame was scrolled during text selection
+	scrolled bool
+	// true while scrolling during text selection
+	scrolling bool
+	// channel for receiving scrolling start events during text selection
+	scrollstart = make(chan struct{})
+	// true after signal sent on scrollstart
+	scrollsent bool
+	// direction of scroll: <0 is up, >0 is down
+	scrdl int
+	// p0 for the text selection while scrolling
+	scrp0 int
+	// p1 for the text selection while scrolling
+	scrp1 int
+	// pointer to either p0 or p1 depending on which direction
+	// the frame is being scrolled while text is being selected
+	scrpt *int
+)
 
 func scrtemps() {
 	if scrtmp != nil {
@@ -101,6 +122,24 @@ func abs(x int) int {
 	return x
 }
 
+func scrorigin(l *Flayer, but int, p0 int) {
+	t := l.text
+
+	if t.tag == Untagged {
+		return
+	}
+
+	// 1=up, 3=down
+	switch but {
+	case 1:
+		outTsll(mesg.Torigin, t.tag, l.origin, p0)
+	case 2:
+		outTsll(mesg.Torigin, t.tag, p0, 1)
+	case 3:
+		horigin(t.tag, p0)
+	}
+}
+
 func scroll(l *Flayer, but int) {
 	up := but == 1 || but == 4
 	down := but == 3 || but == 5
@@ -186,7 +225,7 @@ func scroll(l *Flayer, but int) {
 		case down:
 			but = 3
 			if !in {
-				p0 = nextln(l.text, l.origin)
+				p0 = l.text.NextLine(l.origin)
 			} else {
 				p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
 				if p0 > tot {
@@ -198,49 +237,50 @@ func scroll(l *Flayer, but int) {
 	}
 }
 
-func nextln(t *Text, a0 int) int {
-	if a0 < t.rasp.nrunes {
-		count := 0
-		p0 := a0
-		for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
-			a0--
-			count++
-		}
-		a0 = p0
-		for a0 < t.rasp.nrunes && raspc(&t.rasp, a0) != '\n' {
-			a0++
-		}
-		if a0 < t.rasp.nrunes {
-			a0++
-			for a0 < t.rasp.nrunes && count > 0 && raspc(&t.rasp, a0) != '\n' {
-				a0++
-				count--
-			}
+func scrsleep(dt int) {
+	timer := time.NewTimer(time.Duration(dt) * time.Millisecond)
+	for {
+		select {
+		case <-timer.C:
+			return
+		case <-mousectl.C:
+			timer.Stop()
+			return
 		}
 	}
-	return a0
 }
 
-func prevln(t *Text, a0 int) int {
-	if a0 > 0 {
-		n0, n1, count := 0, 0, 0
-		for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
-			a0--
-			count++
-		}
-		if a0 > 0 {
-			n1 = a0
-			a0--
-			for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
-				a0--
-			}
-			n0 = a0
-			if n0+count >= n1 {
-				a0 = n1 - 1
-			} else {
-				a0 = n0 + count
-			}
-		}
+func scrollf(f *frame.Frame, dl int) {
+	scrolled = true
+	scrolling = true
+	scrdl = dl
+	if !scrollsent {
+		scrollstart <- struct{}{}
+		scrollsent = true
 	}
-	return a0
+	if scrp0 <= 0 && scrdl > 0 {
+		// scrolling down
+		scrp0 = f.P0 + which.origin
+		scrpt = &scrp1
+	}
+	if scrp1 <= 0 && scrdl < 0 {
+		// scrolling up
+		scrp1 = f.P1 + which.origin
+		scrpt = &scrp0
+	}
+	if f != &which.f {
+		panic("wrong frame for scroll")
+	}
+	if scrdl == 0 {
+		scrsleep(100)
+		return
+	}
+	scroll(which, func() int {
+		if scrdl < 0 {
+			return 4
+		} else {
+			return 5
+		}
+	}())
+	mousectl.Read()
 }

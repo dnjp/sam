@@ -78,7 +78,7 @@ func menu2hit() {
 	}
 	menu.Cols = genmenucols()
 	m := draw.MenuHit(2, mousectl, menu, nil)
-	if hostlock != 0 || t.lock != 0 {
+	if hostlock != 0 || t.Locked() {
 		return
 	}
 
@@ -135,7 +135,7 @@ func menu3hit() {
 		if hostlock == 0 {
 			display.SwitchCursor(&bullseye)
 			buttons(Down)
-			if mousep.Buttons&4 != 0 && func() bool { l = flwhich(mousep.Point); return l != nil }() && getr(&r) {
+			if mousep.Buttons&4 != 0 && func() bool { l = WhichFlayer(mousep.Point); return l != nil }() && getr(&r) {
 				duplicate(l, r, l.f.Font, m == Resize)
 			} else {
 				display.SwitchCursor(cursor)
@@ -148,7 +148,7 @@ func menu3hit() {
 			display.SwitchCursor(&bullseye)
 			buttons(Down)
 			if mousep.Buttons&4 != 0 {
-				l = flwhich(mousep.Point)
+				l = WhichFlayer(mousep.Point)
 				if l != nil && hostlock == 0 {
 					t = l.text
 					if t.nwin > 1 {
@@ -167,7 +167,7 @@ func menu3hit() {
 		if hostlock == 0 {
 			display.SwitchCursor(&bullseye)
 			buttons(Down)
-			if mousep.Buttons&4 != 0 && func() bool { l = flwhich(mousep.Point); return l != nil }() {
+			if mousep.Buttons&4 != 0 && func() bool { l = WhichFlayer(mousep.Point); return l != nil }() {
 				outTs(mesg.Twrite, l.text.tag)
 				setlock()
 			} else {
@@ -209,8 +209,8 @@ func sweeptext(isNew bool, tag int) *Text {
 
 	t := new(Text)
 	current(nil)
-	flnew(&t.l[0], gettext, t)
-	flinit(&t.l[0], r, font, maincols[:]) /*bnl*/
+	(&t.l[0]).New(gettext, t)
+	(&t.l[0]).Init(r, font, maincols[:]) /*bnl*/
 	textID++
 	t.id = textID
 	textByID[t.id] = t
@@ -282,7 +282,7 @@ func genmenu2(n int, buf []byte) ([]byte, bool) {
 		return nil, false
 	}
 	p := menu2str[n]
-	if hostlock == 0 && t.lock == 0 || n == Search || n == Look {
+	if hostlock == 0 && !t.Locked() || n == Search || n == Look {
 		return append(buf, p...), true
 	}
 	return paren(buf, p), true
@@ -299,7 +299,7 @@ func genmenu2c(n int, buf []byte) ([]byte, bool) {
 	} else {
 		p = menu2str[n]
 	}
-	if hostlock == 0 && t.lock == 0 {
+	if hostlock == 0 && !t.Locked() {
 		return append(buf, p...), true
 	}
 	return paren(buf, p), true

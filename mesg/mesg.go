@@ -49,8 +49,46 @@ const (
 	Tunindent
 	Tcomment
 	Tlog
+	Tsetdot
 	TMAX
 )
+
+var tname = [TMAX]string{
+	Tversion:      "Tversion",
+	Tstartcmdfile: "Tstartcmdfile",
+	Tcheck:        "Tcheck",
+	Trequest:      "Trequest",
+	Torigin:       "Torigin",
+	Tstartfile:    "Tstartfile",
+	Tworkfile:     "Tworkfile",
+	Ttype:         "Ttype",
+	Tcut:          "Tcut",
+	Tpaste:        "Tpaste",
+	Tsnarf:        "Tsnarf",
+	Tstartnewfile: "Tstartnewfile",
+	Twrite:        "Twrite",
+	Tclose:        "Tclose",
+	Tlook:         "Tlook",
+	Tsearch:       "Tsearch",
+	Tsend:         "Tsend",
+	Tdclick:       "Tdclick",
+	Tstartsnarf:   "Tstartsnarf",
+	Tsetsnarf:     "Tsetsnarf",
+	Tack:          "Tack",
+	Texit:         "Texit",
+	Tplumb:        "Tplumb",
+	Ttclick:       "Ttclick",
+	Tundo:         "Tundo",
+	Tindent:       "Tindent",
+	Tunindent:     "Tunindent",
+	Tcomment:      "Tcomment",
+	Tlog:          "Tlog",
+	Tsetdot:       "Tsetdot",
+}
+
+func Tname(t Tmesg) string {
+	return tname[t]
+}
 
 /*
  * Messages originating at the host
@@ -89,6 +127,39 @@ const (
 	Hcomment   // comment style
 	HMAX
 )
+
+var hname = [HMAX]string{
+	Hversion:    "Hversion",
+	Hbindname:   "Hbindname",
+	Hcurrent:    "Hcurrent",
+	Hnewname:    "Hnewname",
+	Hmovname:    "Hmovname",
+	Hgrow:       "Hgrow",
+	Hcheck0:     "Hcheck0",
+	Hcheck:      "Hcheck",
+	Hunlock:     "Hunlock",
+	Hdata:       "Hdata",
+	Horigin:     "Horigin",
+	Hunlockfile: "Hunlockfile",
+	Hsetdot:     "Hsetdot",
+	Hgrowdata:   "Hgrowdata",
+	Hmoveto:     "Hmoveto",
+	Hclean:      "Hclean",
+	Hdirty:      "Hdirty",
+	Hcut:        "Hcut",
+	Hsetpat:     "Hsetpat",
+	Hdelname:    "Hdelname",
+	Hclose:      "Hclose",
+	Hsetsnarf:   "Hsetsnarf",
+	Hsnarflen:   "Hsnarflen",
+	Hack:        "Hack",
+	Hexit:       "Hexit",
+	Hplumb:      "Hplumb",
+}
+
+func Hname(t Hmesg) string {
+	return hname[t]
+}
 
 type Header struct {
 	Typ    int
