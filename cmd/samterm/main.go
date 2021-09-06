@@ -371,6 +371,7 @@ func scrorigin(l *Flayer, but int, p0 int) {
 		return
 	}
 
+	// up=1 down=3
 	switch but {
 	case 1:
 		outTsll(mesg.Torigin, t.tag, l.origin, p0)
@@ -719,57 +720,20 @@ Out:
 		flsetselect(l, a0, a0)
 		center(l, a0)
 	case UPC:
-		a0 := l.p0
-		flsetselect(l, a0, a0)
+		flsetselect(l, l.p0, l.p0)
 		flushtyping(true)
+		a0 := prevln(t, l.p0)
 		if a0 > 0 {
-			n0, n1, count := 0, 0, 0
-			for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
-				a0--
-				count++
-			}
-			if a0 > 0 {
-				n1 = a0
-				a0--
-				for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
-					a0--
-				}
-				n0 = a0
-				if n0+count >= n1 {
-					a0 = n1 - 1
-				} else {
-					a0 = n0 + count
-				}
-				flsetselect(l, a0, a0)
-				center(l, a0)
-			}
+			flsetselect(l, a0, a0)
+			center(l, a0)
 		}
 	case DOWNC:
-		a0 := l.p0
-		flsetselect(l, a0, a0)
+		flsetselect(l, l.p0, l.p0)
 		flushtyping(true)
-		if a0 < t.rasp.nrunes {
-			count := 0
-			p0 := a0
-			for a0 > 0 && raspc(&t.rasp, a0-1) != '\n' {
-				a0--
-				count++
-			}
-			a0 = p0
-			for a0 < t.rasp.nrunes && raspc(&t.rasp, a0) != '\n' {
-				a0++
-			}
-			if a0 < t.rasp.nrunes {
-				a0++
-				for a0 < t.rasp.nrunes && count > 0 && raspc(&t.rasp, a0) != '\n' {
-					a0++
-					count--
-				}
-				if a0 != p0 {
-					flsetselect(l, a0, a0)
-					center(l, a0)
-				}
-			}
+		a0 := nextln(t, l.p0)
+		if a0 != l.p0 {
+			flsetselect(l, a0, a0)
+			center(l, a0)
 		}
 	case HOMEKEY:
 		flushtyping(false)
