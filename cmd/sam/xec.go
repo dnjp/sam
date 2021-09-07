@@ -77,12 +77,36 @@ func a_cmd(f *File, cp *Cmd) bool {
 	return fappend(f, cp, addr.r.p2)
 }
 
+var fbuf = make([]*File, 2)
+var bufindex int
+
+func bufi() int {
+	var i int
+	switch bufindex {
+	case 0:
+		i = 1
+	case 1:
+		i = 0
+	}
+	bufindex = i
+	return i
+}
+
 func b_cmd(f *File, cp *Cmd) bool {
-	debug("%s ctext=%q\n", cp.cmdc, string(cp.ctext.s))
-	if cp.cmdc == "b" {
+	switch cp.cmdc {
+	case "b":
 		f = tofile(cp.ctext)
-	} else {
+		fbuf[bufi()] = f
+	case "bl":
+		fbuf[bufindex] = f
+		ft := fbuf[bufi()]
+		if ft != nil {
+			f = ft
+			current(f)
+		}
+	default:
 		f = getfile(cp.ctext)
+		fbuf[bufi()] = f
 	}
 	if f.unread {
 		load(f)

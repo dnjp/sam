@@ -155,7 +155,6 @@ func main() {
 						}
 						if mousep.Buttons&1 != 0 {
 							chord = mousep.Buttons
-							debug("chord=%d\n", chord)
 						}
 					}
 				}
@@ -450,7 +449,7 @@ func shouldscroll(l *Flayer, a int) bool {
 	if l == &cmd.l[0] {
 		py := float64(l.f.PointOf(l.origin + l.f.NumChars).Y)
 		my := float64(l.f.Entire.Max.Y)
-		return py/my >= 0.90
+		return py/my >= 0.85
 	} else {
 		return l.origin+l.f.NumChars < a
 	}

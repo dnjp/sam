@@ -621,7 +621,8 @@ func hcheck(m int) {
 		if !reqd {
 			n = rcontig(&t.rasp, a, a+mesg.TBLOCKSIZE, false)
 			if n <= 0 {
-				panic("hcheck request==0")
+				return
+				// panic("hcheck request==0")
 			}
 			outTsls(mesg.Trequest, m, a, int(n))
 			outTs(mesg.Tcheck, m)
