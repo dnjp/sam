@@ -80,33 +80,26 @@ func a_cmd(f *File, cp *Cmd) bool {
 var fbuf = make([]*File, 2)
 var bufindex int
 
-func bufi() int {
-	var i int
-	switch bufindex {
-	case 0:
-		i = 1
-	case 1:
-		i = 0
-	}
-	bufindex = i
-	return i
+func swapindex() int {
+	bufindex = bufindex ^ 1
+	return bufindex
 }
 
 func b_cmd(f *File, cp *Cmd) bool {
 	switch cp.cmdc {
 	case "b":
 		f = tofile(cp.ctext)
-		fbuf[bufi()] = f
+		fbuf[swapindex()] = f
 	case "bl":
 		fbuf[bufindex] = f
-		ft := fbuf[bufi()]
+		ft := fbuf[swapindex()]
 		if ft != nil {
 			f = ft
 			current(f)
 		}
 	default:
 		f = getfile(cp.ctext)
-		fbuf[bufi()] = f
+		fbuf[swapindex()] = f
 	}
 	if f.unread {
 		load(f)
