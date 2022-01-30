@@ -299,6 +299,7 @@ func trytoquit() {
 }
 
 func load(f *File) {
+	fbuf[swapindex()] = f
 	Strduplstr(&genstr, &f.name)
 	filename(f)
 	if len(f.name.s) > 0 {

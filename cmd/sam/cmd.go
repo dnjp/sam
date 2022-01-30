@@ -30,6 +30,7 @@ var cmdtab1 = []Cmdtab{
 	{"\n", false, false, false, "", aDot, 0, "", nl_cmd},
 	{"a", true, false, false, "", aDot, 0, "", a_cmd},
 	{"b", false, false, false, "", aNo, 0, linex, b_cmd},
+	{"bl", false, false, false, "", aNo, 0, linex, b_cmd},
 	{"B", false, false, false, "", aNo, 0, linex, b_cmd},
 	{"c", true, false, false, "", aDot, 0, "", c_cmd},
 	{"d", false, false, false, "", aDot, 0, "", d_cmd},

@@ -4,6 +4,7 @@ package main
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/dnjp/sam/mesg"
 )
@@ -126,7 +127,7 @@ func state(f *File, cleandirty State) {
 
 func lookfile(s *String) *File {
 	for _, f := range file {
-		if Strcmp(&f.name, s) == 0 {
+		if Strcmp(&f.name, s) == 0 || strings.Contains(Strtoc(&f.name), Strtoc(s)) {
 			return f
 		}
 	}

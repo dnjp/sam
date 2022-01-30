@@ -233,6 +233,9 @@ func scroll(l *Flayer, but int) {
 				}
 			}
 		}
+		if p0 == 0 {
+			return
+		}
 		scrorigin(l, but, p0)
 	}
 }
