@@ -707,7 +707,7 @@ Out:
 		l.SetSelect(l.p0, l.p0)
 		flushtyping(true)
 		a0 := t.MoveUp(l.p0)
-		if a0 > 0 {
+		if a0 >= 0 {
 			l.SetSelect(a0, a0)
 			center(l, a0)
 		}
